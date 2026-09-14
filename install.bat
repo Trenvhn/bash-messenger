@@ -56,20 +56,26 @@ echo √ Installation complete!
 echo ================================
 echo.
 
-REM Add to PATH suggestion
+REM Get installation directory
 set INSTALL_DIR=%CD%
 
-echo The 'bashmess' command is ready to use!
+echo The 'bashmess' command is ready!
 echo.
-echo Option 1 - Run from this directory:
-echo   cd %INSTALL_DIR%
-echo   bashmess
+echo To run Bash Messenger:
+echo   1. From this directory: bashmess
+echo   2. From anywhere: Add to PATH (see below)
 echo.
-echo Option 2 - Add to system PATH (run as Administrator):
-echo   setx /M PATH "%%PATH%%;%INSTALL_DIR%"
-echo   Then restart PowerShell/CMD and run: bashmess
+echo === ADD TO PATH (Run PowerShell as Administrator) ===
+echo [System.Environment]::SetEnvironmentVariable('Path', [System.Environment]::GetEnvironmentVariable('Path', 'User') + ';%INSTALL_DIR%', 'User')
 echo.
-echo Option 3 - Create desktop shortcut:
-echo   Right-click bashmess.bat ^> Send to ^> Desktop
+echo Then restart your terminal and run: bashmess
+echo.
+echo === OR CREATE ALIAS IN POWERSHELL ===
+echo echo "function bashmess { python '%INSTALL_DIR%\bash_messenger.py' $args }" ^>^> $PROFILE
+echo Then restart PowerShell and run: bashmess
+echo.
+echo === OR RUN DIRECTLY ===
+echo cd %INSTALL_DIR%
+echo bashmess
 echo.
 pause

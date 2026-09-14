@@ -65,10 +65,10 @@ class BashMessenger:
     def show_banner(self):
         """Display application banner"""
         banner = """
-╔══════════════════════════════════════╗
-║      BASH MESSENGER v1.0             ║
-║  Encrypted P2P Terminal Messenger    ║
-╚══════════════════════════════════════╝
+========================================
+      BASH MESSENGER v1.0
+  Encrypted P2P Terminal Messenger
+========================================
         """
         console.print(banner, style="bold cyan")
 

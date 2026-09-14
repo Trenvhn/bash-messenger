@@ -37,7 +37,24 @@ echo ""
 
 # Install dependencies
 echo "Installing dependencies..."
-pip3 install -r requirements.txt
+
+# Try pip install, if it fails due to externally-managed, use venv
+if ! pip3 install -r requirements.txt 2>/dev/null; then
+    echo ""
+    echo "System is externally managed, creating virtual environment..."
+    python3 -m venv venv
+    source venv/bin/activate
+    pip install -r requirements.txt
+
+    # Update bashmess script to use venv
+    cat > bashmess << 'LAUNCHER'
+#!/bin/bash
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/venv/bin/activate"
+python3 "$SCRIPT_DIR/bash_messenger.py" "$@"
+LAUNCHER
+    chmod +x bashmess
+fi
 
 if [ $? -eq 0 ]; then
     echo ""

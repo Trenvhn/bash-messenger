@@ -56,40 +56,37 @@ LAUNCHER
     chmod +x bashmess
 fi
 
-if [ $? -eq 0 ]; then
-    echo ""
-    echo "================================"
-    echo "✓ Installation complete!"
-    echo "================================"
-    echo ""
+echo ""
+echo "================================"
+echo "✓ Installation complete!"
+echo "================================"
+echo ""
 
-    # Create symlink or add to PATH
-    INSTALL_DIR="$(pwd)"
+# Create symlink or add to PATH
+INSTALL_DIR="$(pwd)"
 
-    # Try to add to user's local bin
-    if [ -d "$HOME/.local/bin" ]; then
-        ln -sf "$INSTALL_DIR/bashmess" "$HOME/.local/bin/bashmess"
-        echo "✓ Added 'bashmess' command to ~/.local/bin"
-        echo ""
-        echo "To run Bash Messenger, simply type:"
-        echo "  bashmess"
-        echo ""
-        echo "If command not found, add ~/.local/bin to PATH:"
-        echo "  echo 'export PATH=\"\$HOME/.local/bin:\$PATH\"' >> ~/.bashrc"
-        echo "  source ~/.bashrc"
-    else
-        echo "To run Bash Messenger:"
-        echo "  cd $INSTALL_DIR"
-        echo "  ./bashmess"
-        echo ""
-        echo "Or create an alias:"
-        echo "  echo \"alias bashmess='$INSTALL_DIR/bashmess'\" >> ~/.bashrc"
-        echo "  source ~/.bashrc"
-    fi
+# Ensure ~/.local/bin exists
+mkdir -p "$HOME/.local/bin"
+
+# Create absolute path symlink
+ln -sf "$INSTALL_DIR/bashmess" "$HOME/.local/bin/bashmess"
+chmod +x "$HOME/.local/bin/bashmess"
+
+echo "✓ Added 'bashmess' command to ~/.local/bin"
+echo ""
+
+# Check if ~/.local/bin is in PATH
+if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
+    echo "Adding ~/.local/bin to PATH..."
+    echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
     echo ""
+    echo "Run this command to activate:"
+    echo "  source ~/.bashrc"
+    echo ""
+    echo "Or open a new terminal, then run:"
+    echo "  bashmess"
 else
-    echo ""
-    echo "✗ Installation failed"
-    echo "Please check error messages above"
-    exit 1
+    echo "To run Bash Messenger, simply type:"
+    echo "  bashmess"
 fi
+echo ""

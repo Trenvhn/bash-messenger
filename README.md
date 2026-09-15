@@ -123,10 +123,15 @@ Customize your username and display color:
 
 ### In-Chat Commands
 
+**All Users:**
 - `/quit` - Leave the session
 - `/users` - List connected users
 - `/file <path>` - Send a file
 - `/clear` - Clear screen
+
+**Host Only:**
+- `/kick <username>` - Remove a user from the session
+- `/ban <username>` - Ban a user's IP address permanently
 
 ## Security Considerations
 

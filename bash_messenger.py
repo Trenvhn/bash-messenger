@@ -226,7 +226,10 @@ class BashMessenger:
 
         console.print("[bold green]Chat Session Started[/bold green]")
         console.print("[dim]Type your message and press Enter to send[/dim]")
-        console.print("[dim]Commands: /quit, /users, /file <path>, /clear[/dim]\n")
+        if isinstance(self.network, Host):
+            console.print("[dim]Commands: /quit, /users, /file <path>, /clear, /kick <user>, /ban <user>[/dim]\n")
+        else:
+            console.print("[dim]Commands: /quit, /users, /file <path>, /clear[/dim]\n")
         console.print("─" * 60 + "\n")
 
         # Start input handler
@@ -300,6 +303,22 @@ class BashMessenger:
                 console.print("[red]Usage: /file <path>[/red]")
             else:
                 await self.send_file(parts[1])
+
+        elif cmd == '/kick':
+            if not isinstance(self.network, Host):
+                console.print("[red]Only the host can kick users[/red]")
+            elif len(parts) < 2:
+                console.print("[red]Usage: /kick <username>[/red]")
+            else:
+                await self.kick_user(parts[1])
+
+        elif cmd == '/ban':
+            if not isinstance(self.network, Host):
+                console.print("[red]Only the host can ban users[/red]")
+            elif len(parts) < 2:
+                console.print("[red]Usage: /ban <username>[/red]")
+            else:
+                await self.ban_user(parts[1])
 
         else:
             console.print(f"[red]Unknown command: {cmd}[/red]")
@@ -428,3 +447,63 @@ def main():
 
 if __name__ == "__main__":
     main()
+    async def kick_user(self, username: str):
+        """Kick user from session (host only)"""
+        if username == "HOST":
+            console.print("[red]Cannot kick the host[/red]")
+            return
+
+        if username not in self.network.clients:
+            console.print(f"[red]User '{username}' not found[/red]")
+            return
+
+        # Send kick notification
+        kick_msg = Message(
+            MessageType.SYSTEM,
+            "System",
+            f"{username} has been kicked by HOST",
+            "#FF0000"
+        )
+        await self.network.broadcast_message(kick_msg)
+        await self.on_message_received(kick_msg)
+
+        # Close connection
+        writer = self.network.clients[username]
+        writer.close()
+        await writer.wait_closed()
+
+        console.print(f"[yellow]✓ Kicked {username}[/yellow]")
+
+    async def ban_user(self, username: str):
+        """Ban user from session (host only)"""
+        if username == "HOST":
+            console.print("[red]Cannot ban the host[/red]")
+            return
+
+        if username not in self.network.clients:
+            console.print(f"[red]User '{username}' not found[/red]")
+            return
+
+        # Get user IP
+        user_info = self.network.client_info[username]
+        user_ip = user_info['address'][0]
+
+        # Ban IP permanently for this session
+        self.network.ban_manager.ban_ip(user_ip)
+
+        # Send ban notification
+        ban_msg = Message(
+            MessageType.SYSTEM,
+            "System",
+            f"{username} has been banned by HOST",
+            "#FF0000"
+        )
+        await self.network.broadcast_message(ban_msg)
+        await self.on_message_received(ban_msg)
+
+        # Close connection
+        writer = self.network.clients[username]
+        writer.close()
+        await writer.wait_closed()
+
+        console.print(f"[red]✓ Banned {username} (IP: {user_ip})[/red]")

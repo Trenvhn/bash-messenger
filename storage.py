@@ -1,13 +1,15 @@
 """
 Storage management for Bash Messenger
-Handles RAM-based message storage and persistent profile data
+Handles RAM-based message storage, disk-based persistent storage, and profile data
 """
 import json
 import os
+import sqlite3
 from pathlib import Path
 from typing import List, Optional, Dict
 from collections import deque
 from protocol import Message
+from datetime import datetime
 
 
 class MessageBuffer:
@@ -75,6 +77,197 @@ class MessageBuffer:
     def get_usage_percentage(self) -> float:
         """Get buffer usage percentage"""
         return (self.current_size / self.max_size) * 100
+
+
+class PersistentMessageStorage:
+    """Disk-based persistent message storage using SQLite"""
+
+    def __init__(self, session_key: str, max_size_bytes: int = 2 * 1024 * 1024 * 1024):
+        """
+        Initialize persistent storage
+
+        Args:
+            session_key: Session identifier
+            max_size_bytes: Maximum storage size (default 2 GB)
+        """
+        self.session_key = session_key
+        self.max_size = max_size_bytes
+        self.storage_dir = Path.home() / '.bash_messenger' / 'sessions'
+        self.storage_dir.mkdir(parents=True, exist_ok=True)
+
+        self.db_path = self.storage_dir / f"{session_key}.db"
+        self._init_database()
+
+    def _init_database(self):
+        """Initialize SQLite database"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS messages (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp REAL NOT NULL,
+                sender TEXT NOT NULL,
+                content TEXT NOT NULL,
+                color TEXT NOT NULL,
+                type TEXT NOT NULL,
+                metadata TEXT,
+                size INTEGER NOT NULL
+            )
+        ''')
+
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS session_info (
+                key TEXT PRIMARY KEY,
+                value TEXT
+            )
+        ''')
+
+        cursor.execute('''
+            CREATE INDEX IF NOT EXISTS idx_timestamp ON messages(timestamp)
+        ''')
+
+        conn.commit()
+        conn.close()
+
+    def add_message(self, message: Message) -> bool:
+        """
+        Add message to persistent storage
+
+        Args:
+            message: Message to add
+
+        Returns:
+            True if added, False if storage full
+        """
+        # Check current size
+        current_size = self.get_storage_size()
+        msg_size = message.get_size()
+
+        if current_size + msg_size > self.max_size:
+            # Try to clean old messages
+            self._cleanup_old_messages(msg_size)
+            current_size = self.get_storage_size()
+
+            if current_size + msg_size > self.max_size:
+                return False
+
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+
+        cursor.execute('''
+            INSERT INTO messages (timestamp, sender, content, color, type, metadata, size)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            message.timestamp,
+            message.sender,
+            message.content,
+            message.color,
+            message.type.value,
+            json.dumps(message.metadata),
+            msg_size
+        ))
+
+        conn.commit()
+        conn.close()
+        return True
+
+    def get_messages(self, limit: Optional[int] = None, offset: int = 0) -> List[Message]:
+        """
+        Get messages from storage
+
+        Args:
+            limit: Maximum number of messages to return
+            offset: Number of messages to skip
+
+        Returns:
+            List of messages
+        """
+        from protocol import MessageType
+
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+
+        query = 'SELECT timestamp, sender, content, color, type, metadata FROM messages ORDER BY timestamp DESC'
+
+        if limit:
+            query += f' LIMIT {limit} OFFSET {offset}'
+
+        cursor.execute(query)
+        rows = cursor.fetchall()
+        conn.close()
+
+        messages = []
+        for row in rows:
+            timestamp, sender, content, color, msg_type, metadata_json = row
+            metadata = json.loads(metadata_json) if metadata_json else {}
+
+            msg = Message(
+                MessageType(msg_type),
+                sender,
+                content,
+                color,
+                metadata
+            )
+            msg.timestamp = timestamp
+            messages.append(msg)
+
+        return list(reversed(messages))  # Return in chronological order
+
+    def _cleanup_old_messages(self, space_needed: int):
+        """Remove oldest messages to free space"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+
+        # Delete oldest 10% of messages
+        cursor.execute('SELECT COUNT(*) FROM messages')
+        total = cursor.fetchone()[0]
+        to_delete = max(1, total // 10)
+
+        cursor.execute(f'''
+            DELETE FROM messages WHERE id IN (
+                SELECT id FROM messages ORDER BY timestamp ASC LIMIT {to_delete}
+            )
+        ''')
+
+        conn.commit()
+        conn.close()
+
+    def get_storage_size(self) -> int:
+        """Get current storage size in bytes"""
+        if not self.db_path.exists():
+            return 0
+        return self.db_path.stat().st_size
+
+    def get_message_count(self) -> int:
+        """Get total message count"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute('SELECT COUNT(*) FROM messages')
+        count = cursor.fetchone()[0]
+        conn.close()
+        return count
+
+    def get_usage_percentage(self) -> float:
+        """Get storage usage percentage"""
+        return (self.get_storage_size() / self.max_size) * 100
+
+    def get_size_mb(self) -> float:
+        """Get current storage size in MB"""
+        return self.get_storage_size() / (1024 * 1024)
+
+    def clear(self):
+        """Clear all messages"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute('DELETE FROM messages')
+        conn.commit()
+        conn.close()
+
+    def delete_session(self):
+        """Delete entire session database"""
+        if self.db_path.exists():
+            self.db_path.unlink()
 
 
 class ProfileManager:

@@ -22,7 +22,7 @@ from session import SessionManager, generate_session_key, generate_connection_ke
 from encryption import MessageEncryption, hash_connection_key
 from protocol import Message, MessageType, FileMessage, FileAssembler
 from network import Host, Client
-from storage import MessageBuffer, ProfileManager, FileStorage
+from storage import MessageBuffer, ProfileManager, FileStorage, PersistentMessageStorage
 from auth import BanManager
 
 console = Console()
@@ -36,9 +36,10 @@ class BashMessenger:
         self.profile_manager = ProfileManager()
         self.profile = self.profile_manager.load_profile()
         self.session_manager = None
-        self.message_buffer = MessageBuffer()
+        self.message_buffer = None  # Will be MessageBuffer or PersistentMessageStorage
         self.file_storage = FileStorage()
         self.file_assembler = FileAssembler()
+        self.is_persistent = False  # Session type flag
 
         self.network = None  # Will be Host or Client
         self.running = False
@@ -135,7 +136,27 @@ class BashMessenger:
     async def create_session(self):
         """Create new session as host"""
         console.clear()
-        console.print("[bold cyan]Create Session[/bold cyan]\n")
+        console.print()
+        console.print("╔" + "═" * 48 + "╗", style="bold cyan")
+        console.print("║" + " " * 15 + "[bold white]CREATE SESSION[/bold white]" + " " * 15 + "║", style="bold cyan")
+        console.print("╚" + "═" * 48 + "╝", style="bold cyan")
+        console.print()
+
+        # Ask for session type
+        console.print("[bold cyan]Select Session Type:[/bold cyan]\n")
+        console.print("[bold green]1.[/bold green] [white]Temporary Session[/white] [dim](RAM only, 265MB, ends when closed)[/dim]")
+        console.print("[bold yellow]2.[/bold yellow] [white]Persistent Session[/white] [dim](Disk storage, 2GB, saves history)[/dim]\n")
+
+        session_type = Prompt.ask("[bold cyan]Session type[/bold cyan]", choices=["1", "2"], default="1")
+
+        if session_type == "2":
+            self.is_persistent = True
+            console.print("\n[green]✓ Persistent session selected (2GB storage)[/green]")
+        else:
+            self.is_persistent = False
+            console.print("\n[green]✓ Temporary session selected (265MB RAM)[/green]")
+
+        console.print()
 
         # Get local IP
         try:
@@ -174,6 +195,14 @@ class BashMessenger:
         # Host username is always "HOST" (not shown to others)
         self.host_username = "HOST"
 
+        # Initialize storage based on session type
+        if self.is_persistent:
+            self.message_buffer = PersistentMessageStorage(session_key, max_size_bytes=2 * 1024 * 1024 * 1024)
+            console.print(f"[dim]Storage: ~/.bash_messenger/sessions/{session_key}.db[/dim]")
+        else:
+            self.message_buffer = MessageBuffer(max_size_bytes=265 * 1024 * 1024)
+            console.print(f"[dim]Storage: RAM only (temporary)[/dim]")
+
         # Create host
         self.network = Host(
             session_key, connection_key_hash,
@@ -201,7 +230,11 @@ class BashMessenger:
     async def join_session(self):
         """Join existing session as client"""
         console.clear()
-        console.print("[bold cyan]Join Session[/bold cyan]\n")
+        console.print()
+        console.print("╔" + "═" * 48 + "╗", style="bold cyan")
+        console.print("║" + " " * 16 + "[bold white]JOIN SESSION[/bold white]" + " " * 16 + "║", style="bold cyan")
+        console.print("╚" + "═" * 48 + "╝", style="bold cyan")
+        console.print()
 
         # Get session details
         session_key = Prompt.ask("Enter Session Key (6 digits)").upper()
@@ -211,6 +244,10 @@ class BashMessenger:
 
         # Initialize session
         self.session_manager = SessionManager(session_key, connection_key, is_host=False)
+
+        # For clients, always use RAM buffer (they don't control storage)
+        self.message_buffer = MessageBuffer()
+        self.is_persistent = False
 
         # Create client
         self.network = Client(
@@ -335,6 +372,18 @@ class BashMessenger:
                 console.print("[red]Usage: /ban <username>[/red]")
             else:
                 await self.ban_user(parts[1])
+
+        elif cmd == '/history':
+            if self.is_persistent:
+                limit = 50
+                if len(parts) > 1:
+                    try:
+                        limit = int(parts[1])
+                    except:
+                        pass
+                self.show_history(limit)
+            else:
+                console.print("[yellow]History only available in persistent sessions[/yellow]")
 
         else:
             console.print(f"[red]Unknown command: {cmd}[/red]")
@@ -534,3 +583,27 @@ if __name__ == "__main__":
         await writer.wait_closed()
 
         console.print(f"[red]✓ Banned {username} (IP: {user_ip})[/red]")
+    def show_history(self, limit: int = 50):
+        """Show message history (persistent sessions only)"""
+        if not self.is_persistent:
+            console.print("[yellow]History not available in temporary sessions[/yellow]")
+            return
+
+        messages = self.message_buffer.get_messages(limit=limit)
+        total = self.message_buffer.get_message_count()
+
+        console.print()
+        console.print("╔" + "═" * 58 + "╗", style="bold cyan")
+        console.print(f"║  [bold white]MESSAGE HISTORY[/bold white] [dim](showing {len(messages)} of {total})[/dim]" + " " * (33 - len(str(len(messages))) - len(str(total))) + "║", style="bold cyan")
+        console.print("╚" + "═" * 58 + "╝", style="bold cyan")
+        console.print()
+
+        if not messages:
+            console.print("[dim]No messages in history[/dim]\n")
+            return
+
+        for msg in messages:
+            self.display_message(msg)
+
+        console.print()
+        console.print(f"[dim]Storage: {self.message_buffer.get_size_mb():.2f} MB / 2048 MB ({self.message_buffer.get_usage_percentage():.1f}%)[/dim]\n")

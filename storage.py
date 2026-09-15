@@ -288,7 +288,7 @@ class ProfileManager:
         Load user profile
 
         Returns:
-            Profile dictionary with username, color, and emoji
+            Profile dictionary with username, color, emoji, and theme
         """
         if not self.profile_path.exists():
             return self._get_default_profile()
@@ -302,11 +302,14 @@ class ProfileManager:
                 # Remove old avatar key if exists
                 if 'avatar' in profile:
                     del profile['avatar']
+                # Add theme if missing
+                if 'theme' not in profile:
+                    profile['theme'] = 'dark'
                 return profile
         except (json.JSONDecodeError, IOError):
             return self._get_default_profile()
 
-    def save_profile(self, username: str, color: str, emoji: str = '👤') -> bool:
+    def save_profile(self, username: str, color: str, emoji: str = '👤', theme: str = 'dark') -> bool:
         """
         Save user profile
 
@@ -314,6 +317,7 @@ class ProfileManager:
             username: User's display name
             color: Hex color code
             emoji: Profile emoji
+            theme: UI theme ('dark' or 'light')
 
         Returns:
             True if successful, False otherwise
@@ -321,7 +325,8 @@ class ProfileManager:
         profile = {
             'username': username,
             'color': color,
-            'emoji': emoji
+            'emoji': emoji,
+            'theme': theme
         }
 
         try:
@@ -336,7 +341,8 @@ class ProfileManager:
         return {
             'username': 'User',
             'color': '#00FF00',
-            'emoji': '👤'
+            'emoji': '👤',
+            'theme': 'dark'
         }
 
     def get_available_emojis(self) -> List[Dict[str, str]]:

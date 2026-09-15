@@ -23,6 +23,7 @@ from encryption import MessageEncryption, hash_connection_key
 from protocol import Message, MessageType, FileMessage, FileAssembler
 from network import Host, Client
 from storage import MessageBuffer, ProfileManager, FileStorage, PersistentMessageStorage
+from theme import Theme
 from auth import BanManager
 
 console = Console()
@@ -35,6 +36,7 @@ class BashMessenger:
         """Initialize Bash Messenger"""
         self.profile_manager = ProfileManager()
         self.profile = self.profile_manager.load_profile()
+        self.theme = Theme(self.profile.get('theme', 'dark'))
         self.session_manager = None
         self.message_buffer = None  # Will be MessageBuffer or PersistentMessageStorage
         self.file_storage = FileStorage()
@@ -65,53 +67,101 @@ class BashMessenger:
 
     def show_banner(self):
         """Display application banner"""
+        t = self.theme
         console.print()
-        console.print("=" * 50, style="bold blue")
-        console.print("           BASH MESSENGER v1.0", style="bold cyan")
-        console.print("     Encrypted P2P Terminal Messenger", style="dim cyan")
-        console.print("=" * 50, style="bold blue")
+        console.print("=" * 50, style=f"bold {t.get('banner')}")
+        console.print(f"           BASH MESSENGER v1.0", style=f"bold {t.get('primary')}")
+        console.print(f"     Encrypted P2P Terminal Messenger", style=f"dim {t.get('secondary')}")
+        console.print("=" * 50, style=f"bold {t.get('banner')}")
         console.print()
 
     def show_main_menu(self) -> str:
         """Show main menu and get user choice"""
+        t = self.theme
         console.print()
-        console.print("[bold cyan]╔══════════════════════════════════╗[/bold cyan]")
-        console.print("[bold cyan]║[/bold cyan]         [bold white]MAIN MENU[/bold white]              [bold cyan]║[/bold cyan]")
-        console.print("[bold cyan]╚══════════════════════════════════╝[/bold cyan]")
+        console.print(f"[bold {t.get('border')}]" + "=" * 36 + f"[/bold {t.get('border')}]")
+        console.print(f"[bold {t.get('border')}]         [bold {t.get('menu_header')}]MAIN MENU[/bold {t.get('menu_header')}]              [/bold {t.get('border')}]")
+        console.print(f"[bold {t.get('border')}]" + "=" * 36 + f"[/bold {t.get('border')}]")
         console.print()
-        console.print("[bold green]1.[/bold green] [white]Create Session[/white] [dim](Host)[/dim]")
-        console.print("[bold green]2.[/bold green] [white]Join Session[/white] [dim](Client)[/dim]")
-        console.print("[bold yellow]3.[/bold yellow] [white]Profile Settings[/white]")
-        console.print("[bold red]4.[/bold red] [white]Exit[/white]")
+        console.print(f"[bold {t.get('menu_item')}]1.[/bold {t.get('menu_item')}] [{t.get('text')}]Create Session[/{t.get('text')}] [{t.get('text_dim')}](Host)[/{t.get('text_dim')}]")
+        console.print(f"[bold {t.get('menu_item')}]2.[/bold {t.get('menu_item')}] [{t.get('text')}]Join Session[/{t.get('text')}] [{t.get('text_dim')}](Client)[/{t.get('text_dim')}]")
+        console.print(f"[bold {t.get('warning')}]3.[/bold {t.get('warning')}] [{t.get('text')}]Profile Settings[/{t.get('text')}]")
+        console.print(f"[bold {t.get('error')}]4.[/bold {t.get('error')}] [{t.get('text')}]Exit[/{t.get('text')}]")
         console.print()
 
-        choice = Prompt.ask("[bold cyan]Select option[/bold cyan]", choices=["1", "2", "3", "4"])
+        choice = Prompt.ask(f"[bold {t.get('input_prompt')}]Select option[/bold {t.get('input_prompt')}]", choices=["1", "2", "3", "4"])
         return choice
 
     def edit_profile(self):
-        """Edit user profile"""
-        console.clear()
+        """Edit user profile with menu-based selection"""
+        while True:
+            console.clear()
+            t = self.theme
+            console.print()
+            console.print("=" * 50, style=f"bold {t.get('border')}")
+            console.print(f" " * 14 + f"[bold {t.get('menu_header')}]PROFILE SETTINGS[/bold {t.get('menu_header')}]", style=f"bold {t.get('border')}")
+            console.print("=" * 50, style=f"bold {t.get('border')}")
+            console.print()
+
+            # Show current profile
+            current_emoji = self.profile.get('emoji', '👤')
+            console.print(f"[bold {t.get('primary')}]Current Profile:[/bold {t.get('primary')}]")
+            console.print(f"  {current_emoji} [{self.profile['color']}][bold]{self.profile['username']}[/bold][/{self.profile['color']}]")
+            console.print(f"  Theme: [{t.get('accent')}]{t.get_mode_name()}[/{t.get('accent')}]")
+            console.print()
+
+            # Menu options
+            console.print(f"[bold {t.get('menu_item')}]1.[/bold {t.get('menu_item')}] [{t.get('text')}]Change Username[/{t.get('text')}]")
+            console.print(f"[bold {t.get('menu_item')}]2.[/bold {t.get('menu_item')}] [{t.get('text')}]Change Color[/{t.get('text')}]")
+            console.print(f"[bold {t.get('menu_item')}]3.[/bold {t.get('menu_item')}] [{t.get('text')}]Change Emoji[/{t.get('text')}]")
+            console.print(f"[bold {t.get('menu_item')}]4.[/bold {t.get('menu_item')}] [{t.get('text')}]Toggle Theme ({t.get_mode_name()})[/{t.get('text')}]")
+            console.print(f"[bold {t.get('error')}]5.[/bold {t.get('error')}] [{t.get('text')}]Back to Main Menu[/{t.get('text')}]")
+            console.print()
+
+            choice = Prompt.ask(f"[bold {t.get('input_prompt')}]Select option[/bold {t.get('input_prompt')}]", choices=["1", "2", "3", "4", "5"])
+
+            if choice == "1":
+                self._change_username()
+            elif choice == "2":
+                self._change_color()
+            elif choice == "3":
+                self._change_emoji()
+            elif choice == "4":
+                self._toggle_theme()
+            elif choice == "5":
+                break
+
+    def _change_username(self):
+        """Change username"""
+        t = self.theme
         console.print()
-        console.print("╔" + "═" * 48 + "╗", style="bold cyan")
-        console.print("║" + " " * 14 + "[bold white]PROFILE SETTINGS[/bold white]" + " " * 16 + "║", style="bold cyan")
-        console.print("╚" + "═" * 48 + "╝", style="bold cyan")
+        new_username = Prompt.ask(f"[{t.get('primary')}]Enter new username[/{t.get('primary')}]", default=self.profile['username'])
+
+        if new_username and new_username != self.profile['username']:
+            self.profile['username'] = new_username
+            if self.profile_manager.save_profile(
+                self.profile['username'],
+                self.profile['color'],
+                self.profile['emoji'],
+                self.theme.get_mode()
+            ):
+                console.print(f"\n[{t.get('success')}]✓ Username updated to: {new_username}[/{t.get('success')}]")
+            else:
+                console.print(f"\n[{t.get('error')}]✗ Failed to save profile[/{t.get('error')}]")
+        else:
+            console.print(f"\n[{t.get('warning')}]Username unchanged[/{t.get('warning')}]")
+
+        Prompt.ask(f"\n[{t.get('text_dim')}]Press Enter to continue[/{t.get('text_dim')}]")
+
+    def _change_color(self):
+        """Change color"""
+        t = self.theme
         console.print()
-
-        # Show current profile
-        current_emoji = self.profile.get('emoji', '👤')
-        console.print(f"[bold cyan]Current Username:[/bold cyan] [green]{self.profile['username']}[/green]")
-        console.print(f"[bold cyan]Current Color:[/bold cyan]    [{self.profile['color']}]●[/{self.profile['color']}] {self.profile['color']}")
-        console.print(f"[bold cyan]Current Emoji:[/bold cyan]    {current_emoji}\n")
-
-        # Edit username
-        new_username = Prompt.ask("Enter new username (or press Enter to keep current)",
-                                 default=self.profile['username'])
-
-        # Show color options
         colors = self.profile_manager.get_available_colors()
-        table = Table(title="Available Colors")
-        table.add_column("Number", style="cyan")
-        table.add_column("Color", style="magenta")
+
+        table = Table(title="Available Colors", border_style=t.get('border'))
+        table.add_column("Number", style=t.get('primary'))
+        table.add_column("Color", style=t.get('accent'))
         table.add_column("Preview")
 
         for i, color in enumerate(colors, 1):
@@ -119,49 +169,73 @@ class BashMessenger:
 
         console.print(table)
 
-        color_choice = IntPrompt.ask("Select color number",
+        color_choice = IntPrompt.ask(f"[{t.get('primary')}]Select color number[/{t.get('primary')}]",
                                      choices=[str(i) for i in range(1, len(colors) + 1)])
         new_color = colors[color_choice - 1]['hex']
 
-        # Show emoji options
+        self.profile['color'] = new_color
+        if self.profile_manager.save_profile(
+            self.profile['username'],
+            self.profile['color'],
+            self.profile['emoji'],
+            self.theme.get_mode()
+        ):
+            console.print(f"\n[{t.get('success')}]✓ Color updated to: {colors[color_choice - 1]['name']}[/{t.get('success')}]")
+        else:
+            console.print(f"\n[{t.get('error')}]✗ Failed to save profile[/{t.get('error')}]")
+
+        Prompt.ask(f"\n[{t.get('text_dim')}]Press Enter to continue[/{t.get('text_dim')}]")
+
+    def _change_emoji(self):
+        """Change emoji"""
+        t = self.theme
         console.print()
         emojis = self.profile_manager.get_available_emojis()
-        emoji_table = Table(title="Available Emojis")
-        emoji_table.add_column("Number", style="cyan")
-        emoji_table.add_column("Name", style="magenta")
-        emoji_table.add_column("Emoji", style="white")
+
+        emoji_table = Table(title="Available Emojis", border_style=t.get('border'))
+        emoji_table.add_column("Number", style=t.get('primary'))
+        emoji_table.add_column("Name", style=t.get('accent'))
+        emoji_table.add_column("Emoji", style=t.get('text'))
 
         for i, emoji_info in enumerate(emojis, 1):
             emoji_table.add_row(str(i), emoji_info['name'], emoji_info['emoji'])
 
         console.print(emoji_table)
 
-        emoji_choice = IntPrompt.ask("Select emoji number",
+        emoji_choice = IntPrompt.ask(f"[{t.get('primary')}]Select emoji number[/{t.get('primary')}]",
                                      choices=[str(i) for i in range(1, len(emojis) + 1)])
         new_emoji = emojis[emoji_choice - 1]['emoji']
 
-        # Show preview
-        console.print()
-        console.print("╔" + "═" * 48 + "╗", style="bold green")
-        console.print("║" + " " * 18 + "[bold white]PREVIEW[/bold white]" + " " * 20 + "║", style="bold green")
-        console.print("╚" + "═" * 48 + "╝", style="bold green")
-        console.print()
-
-        console.print(f"  {new_emoji} [{new_color}][bold]{new_username}[/bold][/{new_color}]")
-        console.print()
-
-        # Save profile
-        self.profile['username'] = new_username
-        self.profile['color'] = new_color
         self.profile['emoji'] = new_emoji
-
-        if self.profile_manager.save_profile(new_username, new_color, new_emoji):
-            console.print("\n[green]✓ Profile saved successfully![/green]")
+        if self.profile_manager.save_profile(
+            self.profile['username'],
+            self.profile['color'],
+            self.profile['emoji'],
+            self.theme.get_mode()
+        ):
+            console.print(f"\n[{t.get('success')}]✓ Emoji updated to: {new_emoji}[/{t.get('success')}]")
         else:
-            console.print("\n[red]✗ Failed to save profile[/red]")
+            console.print(f"\n[{t.get('error')}]✗ Failed to save profile[/{t.get('error')}]")
 
-        Prompt.ask("\nPress Enter to continue")
-        console.clear()
+        Prompt.ask(f"\n[{t.get('text_dim')}]Press Enter to continue[/{t.get('text_dim')}]")
+
+    def _toggle_theme(self):
+        """Toggle between dark and light mode"""
+        self.theme.switch_mode()
+        self.profile['theme'] = self.theme.get_mode()
+
+        if self.profile_manager.save_profile(
+            self.profile['username'],
+            self.profile['color'],
+            self.profile['emoji'],
+            self.theme.get_mode()
+        ):
+            t = self.theme
+            console.print(f"\n[{t.get('success')}]✓ Theme changed to: {t.get_mode_name()}[/{t.get('success')}]")
+        else:
+            console.print(f"\n[{t.get('error')}]✗ Failed to save theme[/{t.get('error')}]")
+
+        Prompt.ask(f"\n[{t.get('text_dim')}]Press Enter to continue[/{t.get('text_dim')}]")
 
     async def create_session(self):
         """Create new session as host"""

@@ -12,8 +12,10 @@ A secure, lightweight terminal-based chat application that enables encrypted pee
 ✨ **Secure & Private**
 - AES-256-GCM encryption for all messages
 - Hash-based authentication (SHA-256)
-- No message history stored on disk (RAM-only)
 - Direct P2P connection (no third-party servers)
+- Two session types:
+  - **Temporary**: RAM-only storage (265MB), ends when closed
+  - **Persistent**: Disk-based storage (2GB), saves message history
 
 🚀 **Easy to Use**
 - Simple terminal interface with colors
@@ -128,6 +130,7 @@ Customize your username and display color:
 - `/users` - List connected users
 - `/file <path>` - Send a file
 - `/clear` - Clear screen
+- `/history [count]` - View message history (persistent sessions only)
 
 **Host Only:**
 - `/kick <username>` - Remove a user from the session

@@ -23,6 +23,7 @@ from encryption import MessageEncryption, hash_connection_key
 from protocol import Message, MessageType, FileMessage, FileAssembler
 from network import Host, Client
 from storage import MessageBuffer, ProfileManager, FileStorage, PersistentMessageStorage
+from profile_picture import ProfilePicture
 from auth import BanManager
 
 console = Console()
@@ -99,7 +100,11 @@ class BashMessenger:
 
         # Show current profile
         console.print(f"[bold cyan]Current Username:[/bold cyan] [green]{self.profile['username']}[/green]")
-        console.print(f"[bold cyan]Current Color:[/bold cyan]    [{self.profile['color']}]●[/{self.profile['color']}] {self.profile['color']}\n")
+        console.print(f"[bold cyan]Current Color:[/bold cyan]    [{self.profile['color']}]●[/{self.profile['color']}] {self.profile['color']}")
+
+        # Show current avatar
+        current_avatar_key = self.profile.get('avatar', 'default')
+        console.print(f"[bold cyan]Current Avatar:[/bold cyan]   {current_avatar_key}\n")
 
         # Edit username
         new_username = Prompt.ask("Enter new username (or press Enter to keep current)",
@@ -121,11 +126,45 @@ class BashMessenger:
                                      choices=[str(i) for i in range(1, len(colors) + 1)])
         new_color = colors[color_choice - 1]['hex']
 
+        # Show avatar options
+        console.print()
+        avatars = ProfilePicture.get_avatar_list()
+        avatar_table = Table(title="Available Avatars")
+        avatar_table.add_column("Number", style="cyan")
+        avatar_table.add_column("Name", style="magenta")
+        avatar_table.add_column("Preview")
+
+        for i, avatar in enumerate(avatars, 1):
+            mini = ProfilePicture.get_avatar_mini(avatar['key'])
+            avatar_table.add_row(str(i), avatar['name'], mini)
+
+        console.print(avatar_table)
+
+        avatar_choice = IntPrompt.ask("Select avatar number",
+                                     choices=[str(i) for i in range(1, len(avatars) + 1)])
+        new_avatar = avatars[avatar_choice - 1]['key']
+
+        # Show preview
+        console.print()
+        console.print("╔" + "═" * 48 + "╗", style="bold green")
+        console.print("║" + " " * 18 + "[bold white]PREVIEW[/bold white]" + " " * 20 + "║", style="bold green")
+        console.print("╚" + "═" * 48 + "╝", style="bold green")
+        console.print()
+
+        avatar_lines = ProfilePicture.get_avatar(new_avatar)
+        for line in avatar_lines:
+            console.print(f"[{new_color}]{line}[/{new_color}]")
+
+        console.print()
+        console.print(f"[{new_color}]●[/{new_color}] [{new_color}][bold]{new_username}[/bold][/{new_color}]")
+        console.print()
+
         # Save profile
         self.profile['username'] = new_username
         self.profile['color'] = new_color
+        self.profile['avatar'] = new_avatar
 
-        if self.profile_manager.save_profile(new_username, new_color):
+        if self.profile_manager.save_profile(new_username, new_color, new_avatar):
             console.print("\n[green]✓ Profile saved successfully![/green]")
         else:
             console.print("\n[red]✗ Failed to save profile[/red]")
@@ -475,7 +514,11 @@ class BashMessenger:
     def display_message(self, message: Message):
         """Display message in terminal"""
         timestamp = self.format_timestamp(message.timestamp)
-        username_colored = f"[{message.color}]●[/{message.color}] [{message.color}][bold]{message.sender}[/bold][/{message.color}]"
+
+        # Get avatar mini icon (emoji fallback for non-Unicode support)
+        avatar_mini = "●"  # Default bullet point
+
+        username_colored = f"[{message.color}]{avatar_mini}[/{message.color}] [{message.color}][bold]{message.sender}[/bold][/{message.color}]"
         console.print(f"[dim cyan]{timestamp}[/dim cyan] {username_colored} [white]{message.content}[/white]")
 
     def format_timestamp(self, timestamp: float) -> str:

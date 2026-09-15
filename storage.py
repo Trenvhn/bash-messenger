@@ -288,7 +288,7 @@ class ProfileManager:
         Load user profile
 
         Returns:
-            Profile dictionary with username and color
+            Profile dictionary with username, color, and avatar
         """
         if not self.profile_path.exists():
             return self._get_default_profile()
@@ -296,24 +296,29 @@ class ProfileManager:
         try:
             with open(self.profile_path, 'r', encoding='utf-8') as f:
                 profile = json.load(f)
+                # Ensure avatar key exists
+                if 'avatar' not in profile:
+                    profile['avatar'] = 'default'
                 return profile
         except (json.JSONDecodeError, IOError):
             return self._get_default_profile()
 
-    def save_profile(self, username: str, color: str) -> bool:
+    def save_profile(self, username: str, color: str, avatar: str = 'default') -> bool:
         """
         Save user profile
 
         Args:
             username: User's display name
             color: Hex color code
+            avatar: Avatar key
 
         Returns:
             True if successful, False otherwise
         """
         profile = {
             'username': username,
-            'color': color
+            'color': color,
+            'avatar': avatar
         }
 
         try:
@@ -327,7 +332,8 @@ class ProfileManager:
         """Get default profile"""
         return {
             'username': 'User',
-            'color': '#00FF00'
+            'color': '#00FF00',
+            'avatar': 'default'
         }
 
     def get_available_colors(self) -> List[Dict[str, str]]:

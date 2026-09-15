@@ -69,27 +69,26 @@ class BashMessenger:
         """Display application banner"""
         t = self.theme
         console.print()
-        console.print("=" * 50, style=f"bold {t.get('banner')}")
-        console.print(f"           BASH MESSENGER v1.0", style=f"bold {t.get('primary')}")
-        console.print(f"     Encrypted P2P Terminal Messenger", style=f"dim {t.get('secondary')}")
-        console.print("=" * 50, style=f"bold {t.get('banner')}")
+        console.print("  ╭" + "─" * 46 + "╮", style=f"{t.get('border')}")
+        console.print(f"  │ [bold {t.get('primary')}] BASH MESSENGER[/bold {t.get('primary')}] [{t.get('text_dim')}]v1.0[/{t.get('text_dim')}]" + " " * 23 + "│", style=f"{t.get('border')}")
+        console.print(f"  │ [{t.get('text_dim')}]Encrypted P2P Terminal Chat[/{t.get('text_dim')}]" + " " * 11 + "│", style=f"{t.get('border')}")
+        console.print("  ╰" + "─" * 46 + "╯", style=f"{t.get('border')}")
         console.print()
 
     def show_main_menu(self) -> str:
         """Show main menu and get user choice"""
         t = self.theme
         console.print()
-        console.print(f"[bold {t.get('border')}]" + "=" * 36 + f"[/bold {t.get('border')}]")
-        console.print(f"[bold {t.get('border')}]         [bold {t.get('menu_header')}]MAIN MENU[/bold {t.get('menu_header')}]              [/bold {t.get('border')}]")
-        console.print(f"[bold {t.get('border')}]" + "=" * 36 + f"[/bold {t.get('border')}]")
+        console.print(f"  [{t.get('primary')}]▸[/{t.get('primary')}] [{t.get('menu_header')}]MAIN MENU[/{t.get('menu_header')}]")
+        console.print("  " + "─" * 30, style=f"{t.get('border')}")
         console.print()
-        console.print(f"[bold {t.get('menu_item')}]1.[/bold {t.get('menu_item')}] [{t.get('text')}]Create Session[/{t.get('text')}] [{t.get('text_dim')}](Host)[/{t.get('text_dim')}]")
-        console.print(f"[bold {t.get('menu_item')}]2.[/bold {t.get('menu_item')}] [{t.get('text')}]Join Session[/{t.get('text')}] [{t.get('text_dim')}](Client)[/{t.get('text_dim')}]")
-        console.print(f"[bold {t.get('warning')}]3.[/bold {t.get('warning')}] [{t.get('text')}]Profile Settings[/{t.get('text')}]")
-        console.print(f"[bold {t.get('error')}]4.[/bold {t.get('error')}] [{t.get('text')}]Exit[/{t.get('text')}]")
+        console.print(f"  [{t.get('menu_item')}]1[/{t.get('menu_item')}] │ [{t.get('text')}]Create Session[/{t.get('text')}] [{t.get('text_dim')}](Host)[/{t.get('text_dim')}]")
+        console.print(f"  [{t.get('menu_item')}]2[/{t.get('menu_item')}] │ [{t.get('text')}]Join Session[/{t.get('text')}] [{t.get('text_dim')}](Client)[/{t.get('text_dim')}]")
+        console.print(f"  [{t.get('warning')}]3[/{t.get('warning')}] │ [{t.get('text')}]Profile Settings[/{t.get('text')}]")
+        console.print(f"  [{t.get('error')}]4[/{t.get('error')}] │ [{t.get('text')}]Exit[/{t.get('text')}]")
         console.print()
 
-        choice = Prompt.ask(f"[bold {t.get('input_prompt')}]Select option[/bold {t.get('input_prompt')}]", choices=["1", "2", "3", "4"])
+        choice = Prompt.ask(f"  [{t.get('input_prompt')}]▸[/{t.get('input_prompt')}]", choices=["1", "2", "3", "4"])
         return choice
 
     def edit_profile(self):
@@ -98,27 +97,29 @@ class BashMessenger:
             console.clear()
             t = self.theme
             console.print()
-            console.print("=" * 50, style=f"bold {t.get('border')}")
-            console.print(f" " * 14 + f"[bold {t.get('menu_header')}]PROFILE SETTINGS[/bold {t.get('menu_header')}]", style=f"bold {t.get('border')}")
-            console.print("=" * 50, style=f"bold {t.get('border')}")
+            console.print("  ╭" + "─" * 46 + "╮", style=f"{t.get('border')}")
+            console.print(f"  │ [{t.get('primary')}]▸[/{t.get('primary')}] [{t.get('menu_header')}]PROFILE SETTINGS[/{t.get('menu_header')}]" + " " * 22 + "│", style=f"{t.get('border')}")
+            console.print("  ╰" + "─" * 46 + "╯", style=f"{t.get('border')}")
             console.print()
 
-            # Show current profile
+            # Show current profile in a box
             current_emoji = self.profile.get('emoji', '👤')
-            console.print(f"[bold {t.get('primary')}]Current Profile:[/bold {t.get('primary')}]")
-            console.print(f"  {current_emoji} [{self.profile['color']}][bold]{self.profile['username']}[/bold][/{self.profile['color']}]")
-            console.print(f"  Theme: [{t.get('accent')}]{t.get_mode_name()}[/{t.get('accent')}]")
+            console.print("  ╭" + "─" * 46 + "╮", style=f"{t.get('border')}")
+            console.print(f"  │ [{t.get('text_dim')}]Current Profile:[/{t.get('text_dim')}]" + " " * 27 + "│", style=f"{t.get('border')}")
+            console.print(f"  │   {current_emoji} [{self.profile['color']}][bold]{self.profile['username']}[/bold][/{self.profile['color']}]" + " " * (37 - len(self.profile['username'])) + "│", style=f"{t.get('border')}")
+            console.print(f"  │   [{t.get('text_dim')}]Theme:[/{t.get('text_dim')}] [{t.get('accent')}]{t.get_mode_name()}[/{t.get('accent')}]" + " " * (35 - len(t.get_mode_name())) + "│", style=f"{t.get('border')}")
+            console.print("  ╰" + "─" * 46 + "╯", style=f"{t.get('border')}")
             console.print()
 
-            # Menu options
-            console.print(f"[bold {t.get('menu_item')}]1.[/bold {t.get('menu_item')}] [{t.get('text')}]Change Username[/{t.get('text')}]")
-            console.print(f"[bold {t.get('menu_item')}]2.[/bold {t.get('menu_item')}] [{t.get('text')}]Change Color[/{t.get('text')}]")
-            console.print(f"[bold {t.get('menu_item')}]3.[/bold {t.get('menu_item')}] [{t.get('text')}]Change Emoji[/{t.get('text')}]")
-            console.print(f"[bold {t.get('menu_item')}]4.[/bold {t.get('menu_item')}] [{t.get('text')}]Toggle Theme ({t.get_mode_name()})[/{t.get('text')}]")
-            console.print(f"[bold {t.get('error')}]5.[/bold {t.get('error')}] [{t.get('text')}]Back to Main Menu[/{t.get('text')}]")
+            # Menu options with cleaner style
+            console.print(f"  [{t.get('menu_item')}]1[/{t.get('menu_item')}] │ [{t.get('text')}]Change Username[/{t.get('text')}]")
+            console.print(f"  [{t.get('menu_item')}]2[/{t.get('menu_item')}] │ [{t.get('text')}]Change Color[/{t.get('text')}]")
+            console.print(f"  [{t.get('menu_item')}]3[/{t.get('menu_item')}] │ [{t.get('text')}]Change Emoji[/{t.get('text')}]")
+            console.print(f"  [{t.get('menu_item')}]4[/{t.get('menu_item')}] │ [{t.get('text')}]Toggle Theme[/{t.get('text')}] [{t.get('text_dim')}]({t.get_mode_name()})[/{t.get('text_dim')}]")
+            console.print(f"  [{t.get('error')}]5[/{t.get('error')}] │ [{t.get('text')}]Back[/{t.get('text')}]")
             console.print()
 
-            choice = Prompt.ask(f"[bold {t.get('input_prompt')}]Select option[/bold {t.get('input_prompt')}]", choices=["1", "2", "3", "4", "5"])
+            choice = Prompt.ask(f"  [{t.get('input_prompt')}]▸[/{t.get('input_prompt')}]", choices=["1", "2", "3", "4", "5"])
 
             if choice == "1":
                 self._change_username()
@@ -240,25 +241,28 @@ class BashMessenger:
     async def create_session(self):
         """Create new session as host"""
         console.clear()
+        t = self.theme
         console.print()
-        console.print("╔" + "═" * 48 + "╗", style="bold cyan")
-        console.print("║" + " " * 15 + "[bold white]CREATE SESSION[/bold white]" + " " * 15 + "║", style="bold cyan")
-        console.print("╚" + "═" * 48 + "╝", style="bold cyan")
+        console.print("  ╭" + "─" * 46 + "╮", style=f"{t.get('border')}")
+        console.print(f"  │ [{t.get('primary')}]▸[/{t.get('primary')}] [{t.get('menu_header')}]CREATE SESSION[/{t.get('menu_header')}]" + " " * 24 + "│", style=f"{t.get('border')}")
+        console.print("  ╰" + "─" * 46 + "╯", style=f"{t.get('border')}")
         console.print()
 
         # Ask for session type
-        console.print("[bold cyan]Select Session Type:[/bold cyan]\n")
-        console.print("[bold green]1.[/bold green] [white]Temporary Session[/white] [dim](RAM only, 265MB, ends when closed)[/dim]")
-        console.print("[bold yellow]2.[/bold yellow] [white]Persistent Session[/white] [dim](Disk storage, 2GB, saves history)[/dim]\n")
+        console.print(f"  [{t.get('primary')}]Session Type:[/{t.get('primary')}]")
+        console.print()
+        console.print(f"  [{t.get('menu_item')}]1[/{t.get('menu_item')}] │ [{t.get('text')}]Temporary[/{t.get('text')}] [{t.get('text_dim')}](RAM, 265MB, ends when closed)[/{t.get('text_dim')}]")
+        console.print(f"  [{t.get('menu_item')}]2[/{t.get('menu_item')}] │ [{t.get('text')}]Persistent[/{t.get('text')}] [{t.get('text_dim')}](Disk, 2GB, saves history)[/{t.get('text_dim')}]")
+        console.print()
 
-        session_type = Prompt.ask("[bold cyan]Session type[/bold cyan]", choices=["1", "2"], default="1")
+        session_type = Prompt.ask(f"  [{t.get('input_prompt')}]▸[/{t.get('input_prompt')}]", choices=["1", "2"], default="1")
 
         if session_type == "2":
             self.is_persistent = True
-            console.print("\n[green]✓ Persistent session selected (2GB storage)[/green]")
+            console.print(f"\n  [{t.get('success')}]✓[/{t.get('success')}] [{t.get('text')}]Persistent session (2GB storage)[/{t.get('text')}]")
         else:
             self.is_persistent = False
-            console.print("\n[green]✓ Temporary session selected (265MB RAM)[/green]")
+            console.print(f"\n  [{t.get('success')}]✓[/{t.get('success')}] [{t.get('text')}]Temporary session (265MB RAM)[/{t.get('text')}]")
 
         console.print()
 
@@ -272,27 +276,27 @@ class BashMessenger:
         except:
             local_ip = "127.0.0.1"
 
-        console.print(f"Your IP: [yellow]{local_ip}[/yellow]")
-        console.print("[dim]Note: Clients need your public IP if connecting over internet[/dim]\n")
+        console.print(f"  [{t.get('text_dim')}]Your IP:[/{t.get('text_dim')}] [{t.get('warning')}]{local_ip}[/{t.get('warning')}]")
+        console.print(f"  [{t.get('text_dim')}]Note: Clients need your public IP for internet connections[/{t.get('text_dim')}]")
+        console.print()
 
         # Generate keys
         session_key = generate_session_key(local_ip)
         connection_key = generate_connection_key()
         connection_key_hash = hash_connection_key(connection_key)
 
-        # Show session info with better styling
-        console.print()
-        console.print("╔" + "═" * 48 + "╗", style="bold green")
-        console.print("║" + " " * 12 + "[bold white]SESSION INFORMATION[/bold white]" + " " * 15 + "║", style="bold green")
-        console.print("╠" + "═" * 48 + "╣", style="bold green")
-        console.print(f"║  [bold cyan]Session Key:[/bold cyan]      [bold yellow]{session_key}[/bold yellow]" + " " * (26 - len(session_key)) + "║", style="bold green")
-        console.print(f"║  [bold cyan]Connection Key:[/bold cyan]   [bold yellow]{connection_key}[/bold yellow]" + " " * (22 - len(connection_key)) + "║", style="bold green")
-        console.print("║" + " " * 48 + "║", style="bold green")
-        console.print("║  [dim]Share these keys with clients[/dim]          ║", style="bold green")
-        console.print("╚" + "═" * 48 + "╝", style="bold green")
+        # Show session info with modern styling
+        console.print("  ╭" + "─" * 46 + "╮", style=f"{t.get('success')}")
+        console.print(f"  │ [{t.get('menu_header')}]SESSION CREDENTIALS[/{t.get('menu_header')}]" + " " * 23 + "│", style=f"{t.get('success')}")
+        console.print("  ├" + "─" * 46 + "┤", style=f"{t.get('success')}")
+        console.print(f"  │  [{t.get('text_dim')}]Session Key:[/{t.get('text_dim')}]     [{t.get('warning')}][bold]{session_key}[/bold][/{t.get('warning')}]" + " " * (22 - len(session_key)) + "│", style=f"{t.get('success')}")
+        console.print(f"  │  [{t.get('text_dim')}]Connection Key:[/{t.get('text_dim')}]  [{t.get('warning')}][bold]{connection_key}[/bold][/{t.get('warning')}]" + " " * (18 - len(connection_key)) + "│", style=f"{t.get('success')}")
+        console.print("  │" + " " * 46 + "│", style=f"{t.get('success')}")
+        console.print(f"  │  [{t.get('text_dim')}]Share these with clients[/{t.get('text_dim')}]" + " " * 18 + "│", style=f"{t.get('success')}")
+        console.print("  ╰" + "─" * 46 + "╯", style=f"{t.get('success')}")
         console.print()
 
-        port = IntPrompt.ask("\nEnter port to listen on", default=5555)
+        port = IntPrompt.ask(f"  [{t.get('input_prompt')}]Port[/{t.get('input_prompt')}]", default=5555)
 
         # Initialize session
         self.session_manager = SessionManager(session_key, connection_key, is_host=True)
@@ -302,10 +306,10 @@ class BashMessenger:
         # Initialize storage based on session type
         if self.is_persistent:
             self.message_buffer = PersistentMessageStorage(session_key, max_size_bytes=2 * 1024 * 1024 * 1024)
-            console.print(f"[dim]Storage: ~/.bash_messenger/sessions/{session_key}.db[/dim]")
+            console.print(f"  [{t.get('text_dim')}]Storage: ~/.bash_messenger/sessions/{session_key}.db[/{t.get('text_dim')}]")
         else:
             self.message_buffer = MessageBuffer(max_size_bytes=265 * 1024 * 1024)
-            console.print(f"[dim]Storage: RAM only (temporary)[/dim]")
+            console.print(f"  [{t.get('text_dim')}]Storage: RAM only (temporary)[/{t.get('text_dim')}]")
 
         # Create host
         self.network = Host(
@@ -321,30 +325,32 @@ class BashMessenger:
 
         try:
             await self.network.start('0.0.0.0', port)
-            console.print(f"\n[green]✓ Session started on port {port}[/green]")
-            console.print("[dim]Waiting for clients to connect...[/dim]\n")
+            console.print(f"\n  [{t.get('success')}]✓[/{t.get('success')}] [{t.get('text')}]Session started on port {port}[/{t.get('text')}]")
+            console.print(f"  [{t.get('text_dim')}]Waiting for clients...[/{t.get('text_dim')}]")
+            console.print()
 
             # Start chat interface
             await self.run_chat_interface()
 
         except Exception as e:
-            console.print(f"\n[red]✗ Failed to start session: {e}[/red]")
-            Prompt.ask("\nPress Enter to continue")
+            console.print(f"\n  [{t.get('error')}]✗ Failed to start session: {e}[/{t.get('error')}]")
+            Prompt.ask(f"\n  [{t.get('text_dim')}]Press Enter to continue[/{t.get('text_dim')}]")
 
     async def join_session(self):
         """Join existing session as client"""
         console.clear()
+        t = self.theme
         console.print()
-        console.print("╔" + "═" * 48 + "╗", style="bold cyan")
-        console.print("║" + " " * 16 + "[bold white]JOIN SESSION[/bold white]" + " " * 16 + "║", style="bold cyan")
-        console.print("╚" + "═" * 48 + "╝", style="bold cyan")
+        console.print("  ╭" + "─" * 46 + "╮", style=f"{t.get('border')}")
+        console.print(f"  │ [{t.get('primary')}]▸[/{t.get('primary')}] [{t.get('menu_header')}]JOIN SESSION[/{t.get('menu_header')}]" + " " * 26 + "│", style=f"{t.get('border')}")
+        console.print("  ╰" + "─" * 46 + "╯", style=f"{t.get('border')}")
         console.print()
 
         # Get session details
-        session_key = Prompt.ask("Enter Session Key (6 digits)").upper()
-        host_ip = Prompt.ask("Enter Host IP address")
-        port = IntPrompt.ask("Enter Port", default=5555)
-        connection_key = Prompt.ask("Enter Connection Key (8 digits)", password=True)
+        session_key = Prompt.ask(f"  [{t.get('input_prompt')}]Session Key (6 digits)[/{t.get('input_prompt')}]").upper()
+        host_ip = Prompt.ask(f"  [{t.get('input_prompt')}]Host IP Address[/{t.get('input_prompt')}]")
+        port = IntPrompt.ask(f"  [{t.get('input_prompt')}]Port[/{t.get('input_prompt')}]", default=5555)
+        connection_key = Prompt.ask(f"  [{t.get('input_prompt')}]Connection Key (8 digits)[/{t.get('input_prompt')}]", password=True)
 
         # Initialize session
         self.session_manager = SessionManager(session_key, connection_key, is_host=False)

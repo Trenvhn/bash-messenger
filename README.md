@@ -26,10 +26,9 @@ A secure, lightweight terminal-based chat application that enables encrypted pee
 💬 **Rich Communication**
 - Text messaging with emoji support
 - File sharing (up to 265MB temporary, 2GB persistent)
-- Typing indicators
 - Real-time user presence
 - Color-coded usernames
-- 16x16 ASCII profile pictures (8 avatars)
+- Emoji profile pictures (20 options)
 - Message history (persistent sessions)
 
 🔒 **Security Features**

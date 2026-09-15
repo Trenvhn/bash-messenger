@@ -270,8 +270,7 @@ class BashMessenger:
                         await self.network.send_message(message)
                     elif isinstance(self.network, Client):
                         await self.network.send_message(message)
-                        # Display own message
-                        self.display_message(message)
+                        # Don't display here - will receive from host broadcast
 
             except EOFError:
                 break

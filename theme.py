@@ -1,8 +1,10 @@
 """
 Theme module for Bash Messenger
-Handles dark mode and light mode color schemes
+Handles dark mode and light mode color schemes with background support
 """
 from typing import Dict
+import os
+import sys
 
 
 class Theme:
@@ -59,6 +61,7 @@ class Theme:
         """
         self.mode = mode
         self.colors = self.DARK_MODE if mode == 'dark' else self.LIGHT_MODE
+        self._apply_background()
 
     def get(self, key: str) -> str:
         """Get color for a key"""
@@ -68,6 +71,7 @@ class Theme:
         """Toggle between dark and light mode"""
         self.mode = 'light' if self.mode == 'dark' else 'dark'
         self.colors = self.DARK_MODE if self.mode == 'dark' else self.LIGHT_MODE
+        self._apply_background()
 
     def get_mode(self) -> str:
         """Get current mode"""
@@ -76,3 +80,26 @@ class Theme:
     def get_mode_name(self) -> str:
         """Get current mode display name"""
         return self.colors['name']
+
+    def _apply_background(self):
+        """Apply background color to terminal"""
+        bg_color = self.colors['background']
+
+        if sys.platform == 'win32':
+            # Windows terminal background using ANSI escape codes
+            if bg_color == '#FFFFFF':
+                # Light mode - white background, black text
+                print('\033[47m\033[30m', end='')
+            else:
+                # Dark mode - black background, white text
+                print('\033[40m\033[37m', end='')
+        else:
+            # Unix-like systems
+            if bg_color == '#FFFFFF':
+                # Light mode
+                print('\033[47m\033[30m', end='')
+            else:
+                # Dark mode
+                print('\033[40m\033[37m', end='')
+
+        sys.stdout.flush()

@@ -305,11 +305,14 @@ class ProfileManager:
                 # Add theme if missing
                 if 'theme' not in profile:
                     profile['theme'] = 'dark'
+                # Add bio if missing
+                if 'bio' not in profile:
+                    profile['bio'] = ''
                 return profile
         except (json.JSONDecodeError, IOError):
             return self._get_default_profile()
 
-    def save_profile(self, username: str, color: str, emoji: str = '👤', theme: str = 'dark') -> bool:
+    def save_profile(self, username: str, color: str, emoji: str = '👤', theme: str = 'dark', bio: str = '') -> bool:
         """
         Save user profile
 
@@ -318,15 +321,20 @@ class ProfileManager:
             color: Hex color code
             emoji: Profile emoji
             theme: UI theme ('dark' or 'light')
+            bio: User biography (max 600 characters)
 
         Returns:
             True if successful, False otherwise
         """
+        # Truncate bio to 600 characters
+        bio = bio[:600] if bio else ''
+
         profile = {
             'username': username,
             'color': color,
             'emoji': emoji,
-            'theme': theme
+            'theme': theme,
+            'bio': bio
         }
 
         try:

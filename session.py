@@ -117,7 +117,7 @@ class SessionManager:
             'is_host': self.is_host,
             'created_at': self.created_at,
             'connected_users': len(self.connected_users),
-            'max_users': 5,  # 1 host + 4 clients
+            'max_users': 51,  # 1 host + 50 clients
             'data_usage_mb': self.total_data_size / (1024 * 1024),
             'max_data_mb': 265,
             'usage_percentage': self.get_usage_percentage(),

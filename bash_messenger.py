@@ -25,6 +25,7 @@ from network import Host, Client
 from storage import MessageBuffer, ProfileManager, FileStorage, PersistentMessageStorage
 from theme import Theme
 from auth import BanManager
+from session_history import SessionHistory
 
 console = Console()
 
@@ -42,6 +43,7 @@ class BashMessenger:
         self.file_storage = FileStorage()
         self.file_assembler = FileAssembler()
         self.is_persistent = False  # Session type flag
+        self.session_history = SessionHistory()
 
         self.network = None  # Will be Host or Client
         self.running = False
@@ -60,8 +62,10 @@ class BashMessenger:
             elif choice == "2":
                 await self.join_session()
             elif choice == "3":
-                self.edit_profile()
+                await self.show_recent_sessions()
             elif choice == "4":
+                self.edit_profile()
+            elif choice == "5":
                 console.print("\n[yellow]Goodbye![/yellow]")
                 break
 
@@ -84,11 +88,12 @@ class BashMessenger:
         console.print()
         console.print(f"  [{t.get('menu_item')}]1[/{t.get('menu_item')}] │ [{t.get('text')}]Create Session[/{t.get('text')}] [{t.get('text_dim')}](Host)[/{t.get('text_dim')}]")
         console.print(f"  [{t.get('menu_item')}]2[/{t.get('menu_item')}] │ [{t.get('text')}]Join Session[/{t.get('text')}] [{t.get('text_dim')}](Client)[/{t.get('text_dim')}]")
-        console.print(f"  [{t.get('warning')}]3[/{t.get('warning')}] │ [{t.get('text')}]Profile Settings[/{t.get('text')}]")
-        console.print(f"  [{t.get('error')}]4[/{t.get('error')}] │ [{t.get('text')}]Exit[/{t.get('text')}]")
+        console.print(f"  [{t.get('menu_item')}]3[/{t.get('menu_item')}] │ [{t.get('text')}]Recent Sessions[/{t.get('text')}]")
+        console.print(f"  [{t.get('warning')}]4[/{t.get('warning')}] │ [{t.get('text')}]Profile Settings[/{t.get('text')}]")
+        console.print(f"  [{t.get('error')}]5[/{t.get('error')}] │ [{t.get('text')}]Exit[/{t.get('text')}]")
         console.print()
 
-        choice = Prompt.ask(f"  [{t.get('input_prompt')}]▸[/{t.get('input_prompt')}]", choices=["1", "2", "3", "4"])
+        choice = Prompt.ask(f"  [{t.get('input_prompt')}]▸[/{t.get('input_prompt')}]", choices=["1", "2", "3", "4", "5"])
         return choice
 
     def edit_profile(self):
@@ -118,11 +123,12 @@ class BashMessenger:
             console.print(f"  [{t.get('menu_item')}]1[/{t.get('menu_item')}] │ [{t.get('text')}]Change Username[/{t.get('text')}]")
             console.print(f"  [{t.get('menu_item')}]2[/{t.get('menu_item')}] │ [{t.get('text')}]Change Color[/{t.get('text')}]")
             console.print(f"  [{t.get('menu_item')}]3[/{t.get('menu_item')}] │ [{t.get('text')}]Change Emoji[/{t.get('text')}]")
-            console.print(f"  [{t.get('menu_item')}]4[/{t.get('menu_item')}] │ [{t.get('text')}]Toggle Theme[/{t.get('text')}] [{t.get('text_dim')}]({t.get_mode_name()})[/{t.get('text_dim')}]")
-            console.print(f"  [{t.get('error')}]5[/{t.get('error')}] │ [{t.get('text')}]Back[/{t.get('text')}]")
+            console.print(f"  [{t.get('menu_item')}]4[/{t.get('menu_item')}] │ [{t.get('text')}]Change Biography[/{t.get('text')}]")
+            console.print(f"  [{t.get('menu_item')}]5[/{t.get('menu_item')}] │ [{t.get('text')}]Toggle Theme[/{t.get('text')}] [{t.get('text_dim')}]({t.get_mode_name()})[/{t.get('text_dim')}]")
+            console.print(f"  [{t.get('error')}]6[/{t.get('error')}] │ [{t.get('text')}]Back[/{t.get('text')}]")
             console.print()
 
-            choice = Prompt.ask(f"  [{t.get('input_prompt')}]▸[/{t.get('input_prompt')}]", choices=["1", "2", "3", "4", "5"])
+            choice = Prompt.ask(f"  [{t.get('input_prompt')}]▸[/{t.get('input_prompt')}]", choices=["1", "2", "3", "4", "5", "6"])
 
             if choice == "1":
                 self._change_username()
@@ -131,8 +137,10 @@ class BashMessenger:
             elif choice == "3":
                 self._change_emoji()
             elif choice == "4":
-                self._toggle_theme()
+                self._change_biography()
             elif choice == "5":
+                self._toggle_theme()
+            elif choice == "6":
                 break
 
     def _change_username(self):
@@ -147,7 +155,8 @@ class BashMessenger:
                 self.profile['username'],
                 self.profile['color'],
                 self.profile['emoji'],
-                self.theme.get_mode()
+                self.theme.get_mode(),
+                self.profile.get('bio', '')
             ):
                 console.print(f"\n[{t.get('success')}]✓ Username updated to: {new_username}[/{t.get('success')}]")
             else:
@@ -182,7 +191,8 @@ class BashMessenger:
             self.profile['username'],
             self.profile['color'],
             self.profile['emoji'],
-            self.theme.get_mode()
+            self.theme.get_mode(),
+            self.profile.get('bio', '')
         ):
             console.print(f"\n[{t.get('success')}]✓ Color updated to: {colors[color_choice - 1]['name']}[/{t.get('success')}]")
         else:
@@ -215,9 +225,54 @@ class BashMessenger:
             self.profile['username'],
             self.profile['color'],
             self.profile['emoji'],
-            self.theme.get_mode()
+            self.theme.get_mode(),
+            self.profile.get('bio', '')
         ):
             console.print(f"\n[{t.get('success')}]✓ Emoji updated to: {new_emoji}[/{t.get('success')}]")
+        else:
+            console.print(f"\n[{t.get('error')}]✗ Failed to save profile[/{t.get('error')}]")
+
+        Prompt.ask(f"\n[{t.get('text_dim')}]Press Enter to continue[/{t.get('text_dim')}]")
+
+    def _change_biography(self):
+        """Change biography"""
+        t = self.theme
+        console.print()
+
+        current_bio = self.profile.get('bio', '')
+        console.print(f"[{t.get('text_dim')}]Current bio ({len(current_bio)}/600 characters):[/{t.get('text_dim')}]")
+        if current_bio:
+            console.print(f"[{t.get('text')}]{current_bio}[/{t.get('text')}]")
+        else:
+            console.print(f"[{t.get('text_dim')}]No biography set[/{t.get('text_dim')}]")
+
+        console.print()
+        console.print(f"[{t.get('primary')}]Enter new biography (press Enter twice when done, max 600 chars):[/{t.get('primary')}]")
+
+        bio_lines = []
+        while True:
+            line = input()
+            if line == "" and len(bio_lines) > 0 and bio_lines[-1] == "":
+                bio_lines.pop()
+                break
+            bio_lines.append(line)
+
+        new_bio = '\n'.join(bio_lines).strip()
+
+        if len(new_bio) > 600:
+            new_bio = new_bio[:600]
+            console.print(f"\n[{t.get('warning')}]⚠ Biography truncated to 600 characters[/{t.get('warning')}]")
+
+        self.profile['bio'] = new_bio
+
+        if self.profile_manager.save_profile(
+            self.profile['username'],
+            self.profile['color'],
+            self.profile['emoji'],
+            self.theme.get_mode(),
+            new_bio
+        ):
+            console.print(f"\n[{t.get('success')}]✓ Biography updated ({len(new_bio)}/600 characters)[/{t.get('success')}]")
         else:
             console.print(f"\n[{t.get('error')}]✗ Failed to save profile[/{t.get('error')}]")
 
@@ -232,7 +287,8 @@ class BashMessenger:
             self.profile['username'],
             self.profile['color'],
             self.profile['emoji'],
-            self.theme.get_mode()
+            self.theme.get_mode(),
+            self.profile.get('bio', '')
         ):
             t = self.theme
             console.print(f"\n[{t.get('success')}]✓ Theme changed to: {t.get_mode_name()}[/{t.get('success')}]")
@@ -332,6 +388,12 @@ class BashMessenger:
             console.print(f"  [{t.get('text_dim')}]Waiting for clients...[/{t.get('text_dim')}]")
             console.print()
 
+            # Save session to history
+            self.session_history.save_session(
+                session_key, local_ip, port, connection_key,
+                self.profile['username'], is_host=True
+            )
+
             # Start chat interface
             await self.run_chat_interface()
 
@@ -375,10 +437,119 @@ class BashMessenger:
 
         if await self.network.connect(host_ip, port):
             console.print("[green]✓ Connected successfully![/green]\n")
+
+            # Save session to history
+            self.session_history.save_session(
+                session_key, host_ip, port, connection_key,
+                self.profile['username'], is_host=False
+            )
+
             await self.run_chat_interface()
         else:
             console.print("\n[red]✗ Connection failed[/red]")
             Prompt.ask("\nPress Enter to continue")
+
+    async def show_recent_sessions(self):
+        """Show and reconnect to recent sessions"""
+        console.clear()
+        t = self.theme
+        console.print()
+        console.print("  ╭" + "─" * 46 + "╮", style=f"{t.get('border')}")
+        console.print(f"  │ [{t.get('primary')}]▸[/{t.get('primary')}] [{t.get('menu_header')}]RECENT SESSIONS[/{t.get('menu_header')}]" + " " * 23 + "│", style=f"{t.get('border')}")
+        console.print("  ╰" + "─" * 46 + "╯", style=f"{t.get('border')}")
+        console.print()
+
+        history = self.session_history.load_history()
+
+        if not history:
+            console.print(f"  [{t.get('text_dim')}]No recent sessions found[/{t.get('text_dim')}]")
+            console.print()
+            Prompt.ask(f"  [{t.get('text_dim')}]Press Enter to continue[/{t.get('text_dim')}]")
+            return
+
+        # Display sessions
+        console.print(f"  [{t.get('text_dim')}]Recent sessions:[/{t.get('text_dim')}]")
+        console.print()
+
+        for i, session in enumerate(history, 1):
+            role = "HOST" if session['is_host'] else "CLIENT"
+            role_color = t.get('success') if session['is_host'] else t.get('primary')
+
+            console.print(f"  [{t.get('menu_item')}]{i}[/{t.get('menu_item')}] │ [{t.get('text')}]{session['session_key']}[/{t.get('text')}] [{role_color}]{role}[/{role_color}]")
+            console.print(f"      [{t.get('text_dim')}]IP: {session['host_ip']}:{session['port']} | User: {session['username']}[/{t.get('text_dim')}]")
+            console.print()
+
+        console.print(f"  [{t.get('error')}]0[/{t.get('error')}] │ [{t.get('text')}]Back[/{t.get('text')}]")
+        console.print()
+
+        choices = [str(i) for i in range(0, len(history) + 1)]
+        choice = Prompt.ask(f"  [{t.get('input_prompt')}]Select session to reconnect[/{t.get('input_prompt')}]", choices=choices)
+
+        if choice == "0":
+            return
+
+        # Reconnect to selected session
+        session = history[int(choice) - 1]
+        await self.reconnect_to_session(session)
+
+    async def reconnect_to_session(self, session: dict):
+        """Reconnect to a saved session"""
+        t = self.theme
+        console.print()
+        console.print(f"  [{t.get('text')}]Reconnecting to session {session['session_key']}...[/{t.get('text')}]")
+        console.print()
+
+        # Initialize session
+        self.session_manager = SessionManager(session['session_key'], session['connection_key'], is_host=session['is_host'])
+
+        if session['is_host']:
+            # Reconnect as host
+            self.is_persistent = False
+            self.message_buffer = MessageBuffer(max_size_bytes=265 * 1024 * 1024)
+            self.host_username = "HOST"
+
+            self.network = Host(
+                session['session_key'],
+                hash_connection_key(session['connection_key']),
+                self.on_message_received,
+                self.on_user_joined,
+                self.on_user_left
+            )
+
+            encryption = MessageEncryption(session['session_key'], session['connection_key'])
+            self.network.set_encryption(encryption)
+
+            try:
+                await self.network.start('0.0.0.0', session['port'])
+                console.print(f"  [{t.get('success')}]✓[/{t.get('success')}] [{t.get('text')}]Session started on port {session['port']}[/{t.get('text')}]")
+                console.print(f"  [{t.get('text_dim')}]Waiting for clients...[/{t.get('text_dim')}]")
+                console.print()
+                await self.run_chat_interface()
+            except Exception as e:
+                console.print(f"  [{t.get('error')}]✗ Failed to start session: {e}[/{t.get('error')}]")
+                Prompt.ask(f"\n  [{t.get('text_dim')}]Press Enter to continue[/{t.get('text_dim')}]")
+        else:
+            # Reconnect as client
+            self.message_buffer = MessageBuffer()
+            self.is_persistent = False
+
+            self.network = Client(
+                session['session_key'],
+                session['connection_key'],
+                self.profile['username'],
+                self.profile['color'],
+                self.on_message_received,
+                self.on_connected,
+                self.on_disconnected
+            )
+
+            if await self.network.connect(session['host_ip'], session['port']):
+                console.print(f"  [{t.get('success')}]✓ Connected successfully![/{t.get('success')}]")
+                console.print()
+                await self.run_chat_interface()
+            else:
+                console.print(f"  [{t.get('error')}]✗ Connection failed[/{t.get('error')}]")
+                Prompt.ask(f"\n  [{t.get('text_dim')}]Press Enter to continue[/{t.get('text_dim')}]")
 
     async def run_chat_interface(self):
         """Run chat interface"""
@@ -514,7 +685,7 @@ class BashMessenger:
 
         console.print()
         console.print("╔" + "═" * 38 + "╗", style="bold cyan")
-        console.print(f"║  [bold white]Connected Users: {client_count}/4[/bold white]" + " " * (23 - len(str(client_count))) + "║", style="bold cyan")
+        console.print(f"║  [bold white]Connected Users: {client_count}/50[/bold white]" + " " * (23 - len(str(client_count))) + "║", style="bold cyan")
         console.print("╠" + "═" * 38 + "╣", style="bold cyan")
 
         for user_info in self.session_manager.connected_users:

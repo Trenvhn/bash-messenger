@@ -34,7 +34,7 @@ class Host:
 
         self.clients: Dict[str, asyncio.StreamWriter] = {}  # username -> writer
         self.client_info: Dict[str, dict] = {}  # username -> {address, color}
-        self.max_clients = 4
+        self.max_clients = 50
         self.ban_manager = BanManager()
         self.running = False
         self.server = None

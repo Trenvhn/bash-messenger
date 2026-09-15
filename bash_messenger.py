@@ -104,10 +104,13 @@ class BashMessenger:
 
             # Show current profile in a box
             current_emoji = self.profile.get('emoji', '👤')
+            username_len = len(self.profile['username'])
+            theme_name_len = len(t.get_mode_name())
+
             console.print("  ╭" + "─" * 46 + "╮", style=f"{t.get('border')}")
-            console.print(f"  │ [{t.get('text_dim')}]Current Profile:[/{t.get('text_dim')}]" + " " * 27 + "│", style=f"{t.get('border')}")
-            console.print(f"  │   {current_emoji} [{self.profile['color']}][bold]{self.profile['username']}[/bold][/{self.profile['color']}]" + " " * (37 - len(self.profile['username'])) + "│", style=f"{t.get('border')}")
-            console.print(f"  │   [{t.get('text_dim')}]Theme:[/{t.get('text_dim')}] [{t.get('accent')}]{t.get_mode_name()}[/{t.get('accent')}]" + " " * (35 - len(t.get_mode_name())) + "│", style=f"{t.get('border')}")
+            console.print(f"  │ [{t.get('text_dim')}]Current Profile:[/{t.get('text_dim')}]" + " " * 29 + "│", style=f"{t.get('border')}")
+            console.print(f"  │   {current_emoji} [{self.profile['color']}][bold]{self.profile['username']}[/bold][/{self.profile['color']}]" + " " * (39 - username_len) + "│", style=f"{t.get('border')}")
+            console.print(f"  │   [{t.get('text_dim')}]Theme:[/{t.get('text_dim')}] [{t.get('accent')}]{t.get_mode_name()}[/{t.get('accent')}]" + " " * (33 - theme_name_len) + "│", style=f"{t.get('border')}")
             console.print("  ╰" + "─" * 46 + "╯", style=f"{t.get('border')}")
             console.print()
 
@@ -287,12 +290,12 @@ class BashMessenger:
 
         # Show session info with modern styling
         console.print("  ╭" + "─" * 46 + "╮", style=f"{t.get('success')}")
-        console.print(f"  │ [{t.get('menu_header')}]SESSION CREDENTIALS[/{t.get('menu_header')}]" + " " * 23 + "│", style=f"{t.get('success')}")
+        console.print(f"  │ [{t.get('menu_header')}]SESSION CREDENTIALS[/{t.get('menu_header')}]" + " " * 26 + "│", style=f"{t.get('success')}")
         console.print("  ├" + "─" * 46 + "┤", style=f"{t.get('success')}")
-        console.print(f"  │  [{t.get('text_dim')}]Session Key:[/{t.get('text_dim')}]     [{t.get('warning')}][bold]{session_key}[/bold][/{t.get('warning')}]" + " " * (22 - len(session_key)) + "│", style=f"{t.get('success')}")
-        console.print(f"  │  [{t.get('text_dim')}]Connection Key:[/{t.get('text_dim')}]  [{t.get('warning')}][bold]{connection_key}[/bold][/{t.get('warning')}]" + " " * (18 - len(connection_key)) + "│", style=f"{t.get('success')}")
+        console.print(f"  │  [{t.get('text_dim')}]Session Key:[/{t.get('text_dim')}]     [{t.get('warning')}][bold]{session_key}[/bold][/{t.get('warning')}]" + " " * (25 - len(session_key)) + "│", style=f"{t.get('success')}")
+        console.print(f"  │  [{t.get('text_dim')}]Connection Key:[/{t.get('text_dim')}]  [{t.get('warning')}][bold]{connection_key}[/bold][/{t.get('warning')}]" + " " * (21 - len(connection_key)) + "│", style=f"{t.get('success')}")
         console.print("  │" + " " * 46 + "│", style=f"{t.get('success')}")
-        console.print(f"  │  [{t.get('text_dim')}]Share these with clients[/{t.get('text_dim')}]" + " " * 18 + "│", style=f"{t.get('success')}")
+        console.print(f"  │  [{t.get('text_dim')}]Share these with clients[/{t.get('text_dim')}]" + " " * 21 + "│", style=f"{t.get('success')}")
         console.print("  ╰" + "─" * 46 + "╯", style=f"{t.get('success')}")
         console.print()
 

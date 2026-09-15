@@ -288,7 +288,7 @@ class ProfileManager:
         Load user profile
 
         Returns:
-            Profile dictionary with username, color, and avatar
+            Profile dictionary with username, color, and emoji
         """
         if not self.profile_path.exists():
             return self._get_default_profile()
@@ -296,21 +296,24 @@ class ProfileManager:
         try:
             with open(self.profile_path, 'r', encoding='utf-8') as f:
                 profile = json.load(f)
-                # Ensure avatar key exists
-                if 'avatar' not in profile:
-                    profile['avatar'] = 'default'
+                # Ensure emoji key exists (migrate old profiles)
+                if 'emoji' not in profile:
+                    profile['emoji'] = '👤'
+                # Remove old avatar key if exists
+                if 'avatar' in profile:
+                    del profile['avatar']
                 return profile
         except (json.JSONDecodeError, IOError):
             return self._get_default_profile()
 
-    def save_profile(self, username: str, color: str, avatar: str = 'default') -> bool:
+    def save_profile(self, username: str, color: str, emoji: str = '👤') -> bool:
         """
         Save user profile
 
         Args:
             username: User's display name
             color: Hex color code
-            avatar: Avatar key
+            emoji: Profile emoji
 
         Returns:
             True if successful, False otherwise
@@ -318,7 +321,7 @@ class ProfileManager:
         profile = {
             'username': username,
             'color': color,
-            'avatar': avatar
+            'emoji': emoji
         }
 
         try:
@@ -333,8 +336,33 @@ class ProfileManager:
         return {
             'username': 'User',
             'color': '#00FF00',
-            'avatar': 'default'
+            'emoji': '👤'
         }
+
+    def get_available_emojis(self) -> List[Dict[str, str]]:
+        """Get list of available emojis for profile selection"""
+        return [
+            {'name': 'Smile', 'emoji': '😀'},
+            {'name': 'Cool', 'emoji': '😎'},
+            {'name': 'Heart Eyes', 'emoji': '😍'},
+            {'name': 'Wink', 'emoji': '😉'},
+            {'name': 'Star Eyes', 'emoji': '🤩'},
+            {'name': 'Robot', 'emoji': '🤖'},
+            {'name': 'Ghost', 'emoji': '👻'},
+            {'name': 'Alien', 'emoji': '👽'},
+            {'name': 'Cat', 'emoji': '😺'},
+            {'name': 'Dog', 'emoji': '🐶'},
+            {'name': 'Fox', 'emoji': '🦊'},
+            {'name': 'Panda', 'emoji': '🐼'},
+            {'name': 'Fire', 'emoji': '🔥'},
+            {'name': 'Star', 'emoji': '⭐'},
+            {'name': 'Heart', 'emoji': '❤️'},
+            {'name': 'Lightning', 'emoji': '⚡'},
+            {'name': 'Rocket', 'emoji': '🚀'},
+            {'name': 'Trophy', 'emoji': '🏆'},
+            {'name': 'Crown', 'emoji': '👑'},
+            {'name': 'Diamond', 'emoji': '💎'}
+        ]
 
     def get_available_colors(self) -> List[Dict[str, str]]:
         """Get list of available colors for user selection"""

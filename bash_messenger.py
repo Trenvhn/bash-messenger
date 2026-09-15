@@ -161,7 +161,8 @@ class BashMessenger:
 
         # Initialize session
         self.session_manager = SessionManager(session_key, connection_key, is_host=True)
-        self.session_manager.add_user(self.profile['username'])
+        # Host username is always "HOST" (not shown to others)
+        self.host_username = "HOST"
 
         # Create host
         self.network = Host(
@@ -259,9 +260,11 @@ class BashMessenger:
                     await self.handle_command(user_input)
                 else:
                     # Send message
+                    # Use HOST as sender name if hosting
+                    sender_name = self.host_username if isinstance(self.network, Host) else self.profile['username']
                     message = Message(
                         MessageType.TEXT,
-                        self.profile['username'],
+                        sender_name,
                         user_input,
                         self.profile['color']
                     )
@@ -302,11 +305,15 @@ class BashMessenger:
             console.print(f"[red]Unknown command: {cmd}[/red]")
 
     def show_users(self):
-        """Show connected users"""
+        """Show connected users (excluding HOST)"""
         info = self.session_manager.get_session_info()
-        console.print(f"\n[cyan]Connected Users: {info['connected_users']}/{info['max_users']}[/cyan]")
+        # Count only clients, not host
+        client_count = len([u for u in self.session_manager.connected_users if u['username'] != 'HOST'])
+        console.print(f"\n[cyan]Connected Users: {client_count}/4[/cyan]")
         for user_info in self.session_manager.connected_users:
-            console.print(f"  • {user_info['username']}")
+            # Don't show HOST in the list
+            if user_info['username'] != 'HOST':
+                console.print(f"  • {user_info['username']}")
         console.print()
 
     async def send_file(self, file_path: str):
@@ -327,8 +334,9 @@ class BashMessenger:
                 return
 
             # Create file message
+            sender_name = self.host_username if isinstance(self.network, Host) else self.profile['username']
             file_msg = FileMessage(path.name, file_data,
-                                  self.profile['username'], self.profile['color'])
+                                  sender_name, self.profile['color'])
 
             console.print(f"[yellow]Sending file: {path.name} ({len(file_data)} bytes)[/yellow]")
 
@@ -382,7 +390,7 @@ class BashMessenger:
         return dt.strftime("%H:%M:%S")
 
     async def on_user_joined(self, username: str, color: str):
-        """Handle user join event"""
+        """Handle user join event (clients only, not host)"""
         self.session_manager.add_user(username)
         message = Message(MessageType.SYSTEM, "System",
                          f"{username} joined the session", "#888888")

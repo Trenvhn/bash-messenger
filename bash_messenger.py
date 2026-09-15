@@ -64,33 +64,41 @@ class BashMessenger:
 
     def show_banner(self):
         """Display application banner"""
-        banner = """
-========================================
-      BASH MESSENGER v1.0
-  Encrypted P2P Terminal Messenger
-========================================
-        """
-        console.print(banner, style="bold cyan")
+        console.print()
+        console.print("=" * 50, style="bold blue")
+        console.print("           BASH MESSENGER v1.0", style="bold cyan")
+        console.print("     Encrypted P2P Terminal Messenger", style="dim cyan")
+        console.print("=" * 50, style="bold blue")
+        console.print()
 
     def show_main_menu(self) -> str:
         """Show main menu and get user choice"""
-        console.print("\n[bold cyan]Main Menu[/bold cyan]")
-        console.print("1. Create Session (Host)")
-        console.print("2. Join Session (Client)")
-        console.print("3. Profile Settings")
-        console.print("4. Exit")
+        console.print()
+        console.print("[bold cyan]╔══════════════════════════════════╗[/bold cyan]")
+        console.print("[bold cyan]║[/bold cyan]         [bold white]MAIN MENU[/bold white]              [bold cyan]║[/bold cyan]")
+        console.print("[bold cyan]╚══════════════════════════════════╝[/bold cyan]")
+        console.print()
+        console.print("[bold green]1.[/bold green] [white]Create Session[/white] [dim](Host)[/dim]")
+        console.print("[bold green]2.[/bold green] [white]Join Session[/white] [dim](Client)[/dim]")
+        console.print("[bold yellow]3.[/bold yellow] [white]Profile Settings[/white]")
+        console.print("[bold red]4.[/bold red] [white]Exit[/white]")
+        console.print()
 
-        choice = Prompt.ask("\nSelect option", choices=["1", "2", "3", "4"])
+        choice = Prompt.ask("[bold cyan]Select option[/bold cyan]", choices=["1", "2", "3", "4"])
         return choice
 
     def edit_profile(self):
         """Edit user profile"""
         console.clear()
-        console.print("[bold cyan]Profile Settings[/bold cyan]\n")
+        console.print()
+        console.print("╔" + "═" * 48 + "╗", style="bold cyan")
+        console.print("║" + " " * 14 + "[bold white]PROFILE SETTINGS[/bold white]" + " " * 16 + "║", style="bold cyan")
+        console.print("╚" + "═" * 48 + "╝", style="bold cyan")
+        console.print()
 
         # Show current profile
-        console.print(f"Current Username: [green]{self.profile['username']}[/green]")
-        console.print(f"Current Color: [{self.profile['color']}]●[/{self.profile['color']}] {self.profile['color']}\n")
+        console.print(f"[bold cyan]Current Username:[/bold cyan] [green]{self.profile['username']}[/green]")
+        console.print(f"[bold cyan]Current Color:[/bold cyan]    [{self.profile['color']}]●[/{self.profile['color']}] {self.profile['color']}\n")
 
         # Edit username
         new_username = Prompt.ask("Enter new username (or press Enter to keep current)",
@@ -147,15 +155,17 @@ class BashMessenger:
         connection_key = generate_connection_key()
         connection_key_hash = hash_connection_key(connection_key)
 
-        # Show session info
-        panel = Panel(
-            f"[bold]Session Key:[/bold] [yellow]{session_key}[/yellow]\n"
-            f"[bold]Connection Key:[/bold] [yellow]{connection_key}[/yellow]\n\n"
-            f"[dim]Share these with clients to allow them to connect[/dim]",
-            title="Session Information",
-            border_style="green"
-        )
-        console.print(panel)
+        # Show session info with better styling
+        console.print()
+        console.print("╔" + "═" * 48 + "╗", style="bold green")
+        console.print("║" + " " * 12 + "[bold white]SESSION INFORMATION[/bold white]" + " " * 15 + "║", style="bold green")
+        console.print("╠" + "═" * 48 + "╣", style="bold green")
+        console.print(f"║  [bold cyan]Session Key:[/bold cyan]      [bold yellow]{session_key}[/bold yellow]" + " " * (26 - len(session_key)) + "║", style="bold green")
+        console.print(f"║  [bold cyan]Connection Key:[/bold cyan]   [bold yellow]{connection_key}[/bold yellow]" + " " * (22 - len(connection_key)) + "║", style="bold green")
+        console.print("║" + " " * 48 + "║", style="bold green")
+        console.print("║  [dim]Share these keys with clients[/dim]          ║", style="bold green")
+        console.print("╚" + "═" * 48 + "╝", style="bold green")
+        console.print()
 
         port = IntPrompt.ask("\nEnter port to listen on", default=5555)
 
@@ -224,13 +234,19 @@ class BashMessenger:
         """Run chat interface"""
         self.running = True
 
-        console.print("[bold green]Chat Session Started[/bold green]")
-        console.print("[dim]Type your message and press Enter to send[/dim]")
+        console.print()
+        console.print("╔" + "═" * 58 + "╗", style="bold green")
+        console.print("║" + " " * 15 + "[bold white]CHAT SESSION STARTED[/bold white]" + " " * 15 + "    ║", style="bold green")
+        console.print("╚" + "═" * 58 + "╝", style="bold green")
+        console.print()
+        console.print("[dim cyan]Type your message and press Enter to send[/dim cyan]")
         if isinstance(self.network, Host):
-            console.print("[dim]Commands: /quit, /users, /file <path>, /clear, /kick <user>, /ban <user>[/dim]\n")
+            console.print("[dim yellow]Host Commands: /kick <user>, /ban <user>[/dim yellow]")
+            console.print("[dim]All Commands: /quit, /users, /file <path>, /clear[/dim]\n")
         else:
             console.print("[dim]Commands: /quit, /users, /file <path>, /clear[/dim]\n")
-        console.print("─" * 60 + "\n")
+        console.print("─" * 60, style="blue")
+        console.print()
 
         # Start input handler
         input_task = asyncio.create_task(self.handle_user_input())
@@ -328,11 +344,22 @@ class BashMessenger:
         info = self.session_manager.get_session_info()
         # Count only clients, not host
         client_count = len([u for u in self.session_manager.connected_users if u['username'] != 'HOST'])
-        console.print(f"\n[cyan]Connected Users: {client_count}/4[/cyan]")
+
+        console.print()
+        console.print("╔" + "═" * 38 + "╗", style="bold cyan")
+        console.print(f"║  [bold white]Connected Users: {client_count}/4[/bold white]" + " " * (23 - len(str(client_count))) + "║", style="bold cyan")
+        console.print("╠" + "═" * 38 + "╣", style="bold cyan")
+
         for user_info in self.session_manager.connected_users:
             # Don't show HOST in the list
             if user_info['username'] != 'HOST':
-                console.print(f"  • {user_info['username']}")
+                username = user_info['username']
+                console.print(f"║  [green]●[/green] [white]{username}[/white]" + " " * (33 - len(username)) + "║", style="bold cyan")
+
+        if client_count == 0:
+            console.print("║  [dim]No users connected yet[/dim]          ║", style="bold cyan")
+
+        console.print("╚" + "═" * 38 + "╝", style="bold cyan")
         console.print()
 
     async def send_file(self, file_path: str):
@@ -394,13 +421,13 @@ class BashMessenger:
                     console.print(f"[red]✗ Failed to save file: {filename}[/red]")
 
         elif message.type == MessageType.SYSTEM:
-            console.print(f"[dim]{message.content}[/dim]")
+            console.print(f"[bold yellow]» [/bold yellow][dim]{message.content}[/dim]")
 
     def display_message(self, message: Message):
         """Display message in terminal"""
         timestamp = self.format_timestamp(message.timestamp)
-        username_colored = f"[{message.color}]{message.sender}[/{message.color}]"
-        console.print(f"[dim]{timestamp}[/dim] {username_colored}: {message.content}")
+        username_colored = f"[{message.color}]●[/{message.color}] [{message.color}][bold]{message.sender}[/bold][/{message.color}]"
+        console.print(f"[dim cyan]{timestamp}[/dim cyan] {username_colored} [white]{message.content}[/white]")
 
     def format_timestamp(self, timestamp: float) -> str:
         """Format timestamp for display"""
@@ -412,14 +439,14 @@ class BashMessenger:
         """Handle user join event (clients only, not host)"""
         self.session_manager.add_user(username)
         message = Message(MessageType.SYSTEM, "System",
-                         f"{username} joined the session", "#888888")
+                         f"→ {username} joined the session", "#00FF00")
         await self.on_message_received(message)
 
     async def on_user_left(self, username: str):
         """Handle user leave event"""
         self.session_manager.remove_user(username)
         message = Message(MessageType.SYSTEM, "System",
-                         f"{username} left the session", "#888888")
+                         f"← {username} left the session", "#FF5555")
         await self.on_message_received(message)
 
     async def on_connected(self):

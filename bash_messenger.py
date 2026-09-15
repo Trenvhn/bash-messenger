@@ -26,6 +26,7 @@ from storage import MessageBuffer, ProfileManager, FileStorage, PersistentMessag
 from theme import Theme
 from auth import BanManager
 from session_history import SessionHistory
+from download_manager import DownloadManager, PendingDownload
 
 console = Console()
 
@@ -44,6 +45,7 @@ class BashMessenger:
         self.file_assembler = FileAssembler()
         self.is_persistent = False  # Session type flag
         self.session_history = SessionHistory()
+        self.download_manager = DownloadManager()
 
         self.network = None  # Will be Host or Client
         self.running = False
@@ -563,9 +565,9 @@ class BashMessenger:
         console.print("[dim cyan]Type your message and press Enter to send[/dim cyan]")
         if isinstance(self.network, Host):
             console.print("[dim yellow]Host Commands: /kick <user>, /ban <user>[/dim yellow]")
-            console.print("[dim]All Commands: /quit, /users, /file <path>, /clear, /memory[/dim]\n")
+            console.print("[dim]All Commands: /quit, /users, /file <path>, /downloads, /clear, /memory[/dim]\n")
         else:
-            console.print("[dim]Commands: /quit, /users, /file <path>, /clear, /memory[/dim]\n")
+            console.print("[dim]Commands: /quit, /users, /file <path>, /downloads, /clear, /memory[/dim]\n")
         console.print("─" * 60, style="blue")
         console.print()
 
@@ -639,6 +641,9 @@ class BashMessenger:
 
         elif cmd == '/memory':
             self.show_memory_usage()
+
+        elif cmd == '/downloads':
+            self.show_downloads()
 
         elif cmd == '/file':
             if len(parts) < 2:
@@ -762,12 +767,113 @@ class BashMessenger:
 
         console.print()
 
+    def show_downloads(self):
+        """Show pending downloads and allow user to download them"""
+        t = self.theme
+        console.print()
+
+        pending = self.download_manager.get_pending_downloads()
+
+        if not pending:
+            console.print(f"  [{t.get('text_dim')}]No pending downloads[/{t.get('text_dim')}]")
+            console.print()
+            return
+
+        console.print("  ╭" + "─" * 58 + "╮", style=f"{t.get('border')}")
+        console.print(f"  │ [{t.get('primary')}]PENDING DOWNLOADS[/{t.get('primary')}]" + " " * 40 + "│", style=f"{t.get('border')}")
+        console.print("  ├" + "─" * 58 + "┤", style=f"{t.get('border')}")
+
+        for i, download in enumerate(pending, 1):
+            filename_display = download.filename[:35] + "..." if len(download.filename) > 35 else download.filename
+            size_display = download.get_size_display()
+            sender_display = download.sender[:15] + "..." if len(download.sender) > 15 else download.sender
+
+            console.print(f"  │  [{t.get('menu_item')}]{i}[/{t.get('menu_item')}] │ [{t.get('text')}]{filename_display}[/{t.get('text')}]" + " " * (40 - len(filename_display)) + "│", style=f"{t.get('border')}")
+            console.print(f"  │      [{t.get('text_dim')}]From: {sender_display} | Size: {size_display}[/{t.get('text_dim')}]" + " " * (35 - len(sender_display) - len(size_display)) + "│", style=f"{t.get('border')}")
+
+            if i < len(pending):
+                console.print("  │" + " " * 58 + "│", style=f"{t.get('border')}")
+
+        console.print("  ╰" + "─" * 58 + "╯", style=f"{t.get('border')}")
+        console.print()
+
+        console.print(f"  [{t.get('text_dim')}]Enter file number to download, or press Enter to cancel[/{t.get('text_dim')}]")
+        choice = Prompt.ask(f"  [{t.get('input_prompt')}]▸[/{t.get('input_prompt')}]", default="")
+
+        if choice and choice.isdigit():
+            idx = int(choice) - 1
+            if 0 <= idx < len(pending):
+                download = pending[idx]
+                self.download_file(download)
+            else:
+                console.print(f"  [{t.get('error')}]Invalid selection[/{t.get('error')}]")
+
+        console.print()
+
+    def download_file(self, download):
+        """Download a file with progress bar"""
+        t = self.theme
+        console.print()
+        console.print(f"  [{t.get('text')}]Downloading: {download.filename}[/{t.get('text')}]")
+
+        # Request file from storage
+        file_data = self.file_storage.get_file(download.file_id)
+
+        if not file_data:
+            console.print(f"  [{t.get('error')}]✗ File not found[/{t.get('error')}]")
+            self.download_manager.remove_pending(download.file_id)
+            return
+
+        # Mark as downloading
+        self.download_manager.start_download(download.file_id)
+
+        # Simulate progress bar (in real implementation, this would be during transfer)
+        from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, DownloadColumn, TransferSpeedColumn
+
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+            DownloadColumn(),
+            TransferSpeedColumn(),
+            console=console
+        ) as progress:
+            task = progress.add_task(f"  [{t.get('primary')}]Downloading...[/{t.get('primary')}]", total=len(file_data))
+
+            # Simulate chunked download
+            chunk_size = 1024 * 100  # 100KB chunks
+            downloaded = 0
+
+            for i in range(0, len(file_data), chunk_size):
+                chunk = file_data[i:i + chunk_size]
+                downloaded += len(chunk)
+                self.download_manager.update_progress(download.file_id, downloaded)
+                progress.update(task, completed=downloaded)
+
+        # Save file
+        filepath = self.download_manager.complete_download(download.file_id, file_data)
+
+        if filepath:
+            console.print(f"  [{t.get('success')}]✓ Downloaded to: {filepath}[/{t.get('success')}]")
+        else:
+            console.print(f"  [{t.get('error')}]✗ Failed to save file[/{t.get('error')}]")
+
+        console.print()
+
     async def send_file(self, file_path: str):
-        """Send file to session"""
+        """Send file to session with progress bar"""
         try:
+            # Clean up file path (remove quotes if dragged and dropped)
+            file_path = file_path.strip().strip('"').strip("'")
+
             path = Path(file_path)
             if not path.exists():
                 console.print(f"[red]File not found: {file_path}[/red]")
+                return
+
+            if not path.is_file():
+                console.print(f"[red]Not a file: {file_path}[/red]")
                 return
 
             # Read file
@@ -784,16 +890,34 @@ class BashMessenger:
             file_msg = FileMessage(path.name, file_data,
                                   sender_name, self.profile['color'])
 
-            console.print(f"[yellow]Sending file: {path.name} ({len(file_data)} bytes)[/yellow]")
+            t = self.theme
+            console.print(f"[{t.get('primary')}]📤 Sending file: {path.name} ({PendingDownload._format_size(len(file_data))})[/{t.get('primary')}]")
 
-            # Send chunks
-            for chunk_message in file_msg.get_chunks():
-                if isinstance(self.network, Host):
-                    await self.network.send_message(chunk_message)
-                elif isinstance(self.network, Client):
-                    await self.network.send_message(chunk_message)
+            # Send chunks with progress bar
+            from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, DownloadColumn, TransferSpeedColumn
 
-            console.print(f"[green]✓ File sent: {path.name}[/green]")
+            chunks = list(file_msg.get_chunks())
+
+            with Progress(
+                SpinnerColumn(),
+                TextColumn("[progress.description]{task.description}"),
+                BarColumn(),
+                TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+                DownloadColumn(),
+                TransferSpeedColumn(),
+                console=console
+            ) as progress:
+                task = progress.add_task(f"  [{t.get('primary')}]Uploading...[/{t.get('primary')}]", total=len(chunks))
+
+                for i, chunk_message in enumerate(chunks):
+                    if isinstance(self.network, Host):
+                        await self.network.send_message(chunk_message)
+                    elif isinstance(self.network, Client):
+                        await self.network.send_message(chunk_message)
+
+                    progress.update(task, completed=i + 1)
+
+            console.print(f"[{t.get('success')}]✓ File sent: {path.name}[/{t.get('success')}]")
 
         except Exception as e:
             console.print(f"[red]Error sending file: {e}[/red]")
@@ -814,11 +938,23 @@ class BashMessenger:
             file_data = self.file_assembler.add_chunk(message)
             if file_data:
                 filename = message.metadata['filename']
-                saved_path = self.file_storage.save_file(filename, file_data)
-                if saved_path:
-                    console.print(f"[green]✓ File received: {filename} -> {saved_path}[/green]")
+                filesize = len(file_data)
+                sender = message.sender
+
+                # Save to file storage temporarily
+                file_id = self.file_storage.save_file(filename, file_data)
+
+                if file_id:
+                    # Add to pending downloads
+                    self.download_manager.add_pending_download(
+                        file_id, filename, filesize, sender
+                    )
+
+                    t = self.theme
+                    console.print(f"[{t.get('success')}]📥 File received: {filename} ({PendingDownload._format_size(filesize)}) from {sender}[/{t.get('success')}]")
+                    console.print(f"[{t.get('text_dim')}]   Use /downloads to save to your Downloads folder[/{t.get('text_dim')}]")
                 else:
-                    console.print(f"[red]✗ Failed to save file: {filename}[/red]")
+                    console.print(f"[red]✗ Failed to receive file: {filename}[/red]")
 
         elif message.type == MessageType.SYSTEM:
             console.print(f"[bold yellow]» [/bold yellow][dim]{message.content}[/dim]")

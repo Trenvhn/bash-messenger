@@ -405,34 +405,77 @@ class FileStorage:
 
     def __init__(self):
         """Initialize file storage"""
-        self.temp_dir = Path.home() / '.bash_messenger' / 'downloads'
+        self.temp_dir = Path.home() / '.bash_messenger' / 'temp_files'
         self._ensure_temp_dir()
+        self.file_cache = {}  # file_id -> file_data
 
     def _ensure_temp_dir(self):
         """Create temp directory if it doesn't exist"""
         self.temp_dir.mkdir(parents=True, exist_ok=True)
 
-    def save_file(self, filename: str, data: bytes) -> Optional[Path]:
+    def save_file(self, filename: str, data: bytes) -> Optional[str]:
         """
-        Save received file
+        Save received file to cache
 
         Args:
             filename: Name of file
             data: File bytes
 
         Returns:
-            Path to saved file or None if failed
+            file_id (unique identifier) or None if failed
         """
         try:
-            # Sanitize filename
-            safe_filename = self._sanitize_filename(filename)
-            file_path = self.temp_dir / safe_filename
+            import hashlib
+            import time
 
-            # Handle duplicate filenames
-            counter = 1
-            while file_path.exists():
-                name, ext = os.path.splitext(safe_filename)
-                file_path = self.temp_dir / f"{name}_{counter}{ext}"
+            # Generate unique file ID
+            file_id = hashlib.sha256(f"{filename}{time.time()}".encode()).hexdigest()[:16]
+
+            # Store in cache
+            self.file_cache[file_id] = {
+                'filename': filename,
+                'data': data,
+                'size': len(data)
+            }
+
+            return file_id
+
+        except Exception as e:
+            print(f"Failed to save file: {e}")
+            return None
+
+    def get_file(self, file_id: str) -> Optional[bytes]:
+        """
+        Get file data by ID
+
+        Args:
+            file_id: Unique file identifier
+
+        Returns:
+            File bytes or None if not found
+        """
+        if file_id in self.file_cache:
+            return self.file_cache[file_id]['data']
+        return None
+
+    def remove_file(self, file_id: str) -> bool:
+        """
+        Remove file from cache
+
+        Args:
+            file_id: File identifier
+
+        Returns:
+            True if removed
+        """
+        if file_id in self.file_cache:
+            del self.file_cache[file_id]
+            return True
+        return False
+
+    def clear_cache(self):
+        """Clear all cached files"""
+        self.file_cache.clear()
                 counter += 1
 
             with open(file_path, 'wb') as f:

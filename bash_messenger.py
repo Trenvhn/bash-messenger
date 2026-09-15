@@ -389,9 +389,9 @@ class BashMessenger:
         console.print("[dim cyan]Type your message and press Enter to send[/dim cyan]")
         if isinstance(self.network, Host):
             console.print("[dim yellow]Host Commands: /kick <user>, /ban <user>[/dim yellow]")
-            console.print("[dim]All Commands: /quit, /users, /file <path>, /clear[/dim]\n")
+            console.print("[dim]All Commands: /quit, /users, /file <path>, /clear, /memory[/dim]\n")
         else:
-            console.print("[dim]Commands: /quit, /users, /file <path>, /clear[/dim]\n")
+            console.print("[dim]Commands: /quit, /users, /file <path>, /clear, /memory[/dim]\n")
         console.print("─" * 60, style="blue")
         console.print()
 
@@ -463,6 +463,9 @@ class BashMessenger:
         elif cmd == '/clear':
             console.clear()
 
+        elif cmd == '/memory':
+            self.show_memory_usage()
+
         elif cmd == '/file':
             if len(parts) < 2:
                 console.print("[red]Usage: /file <path>[/red]")
@@ -521,6 +524,68 @@ class BashMessenger:
             console.print("║  [dim]No users connected yet[/dim]          ║", style="bold cyan")
 
         console.print("╚" + "═" * 38 + "╝", style="bold cyan")
+        console.print()
+
+    def show_memory_usage(self):
+        """Show storage/memory usage statistics"""
+        t = self.theme
+        console.print()
+
+        if self.is_persistent:
+            # Persistent storage
+            used_mb = self.message_buffer.get_size_mb()
+            max_mb = 2048  # 2GB
+            percentage = (used_mb / max_mb) * 100
+            storage_type = "Persistent (Disk)"
+
+            console.print("  ╭" + "─" * 46 + "╮", style=f"{t.get('border')}")
+            console.print(f"  │ [{t.get('primary')}]STORAGE USAGE[/{t.get('primary')}]" + " " * 29 + "│", style=f"{t.get('border')}")
+            console.print("  ├" + "─" * 46 + "┤", style=f"{t.get('border')}")
+            console.print(f"  │  [{t.get('text_dim')}]Type:[/{t.get('text_dim')}] [{t.get('text')}]{storage_type}[/{t.get('text')}]" + " " * (33 - len(storage_type)) + "│", style=f"{t.get('border')}")
+            console.print(f"  │  [{t.get('text_dim')}]Used:[/{t.get('text_dim')}] [{t.get('warning')}]{used_mb:.2f} MB[/{t.get('warning')}] [{t.get('text_dim')}]/ {max_mb} MB[/{t.get('text_dim')}]" + " " * (18 - len(f"{used_mb:.2f}")) + "│", style=f"{t.get('border')}")
+
+            # Progress bar
+            bar_width = 30
+            filled = int((percentage / 100) * bar_width)
+            bar = "█" * filled + "░" * (bar_width - filled)
+
+            if percentage < 50:
+                bar_color = t.get('success')
+            elif percentage < 80:
+                bar_color = t.get('warning')
+            else:
+                bar_color = t.get('error')
+
+            console.print(f"  │  [{bar_color}]{bar}[/{bar_color}] [{t.get('text')}]{percentage:.1f}%[/{t.get('text')}]" + " " * (8 - len(f"{percentage:.1f}")) + "│", style=f"{t.get('border')}")
+            console.print("  ╰" + "─" * 46 + "╯", style=f"{t.get('border')}")
+        else:
+            # Temporary storage (RAM)
+            used_mb = self.message_buffer.get_size_mb()
+            max_mb = 265  # 265MB
+            percentage = (used_mb / max_mb) * 100
+            storage_type = "Temporary (RAM)"
+
+            console.print("  ╭" + "─" * 46 + "╮", style=f"{t.get('border')}")
+            console.print(f"  │ [{t.get('primary')}]MEMORY USAGE[/{t.get('primary')}]" + " " * 30 + "│", style=f"{t.get('border')}")
+            console.print("  ├" + "─" * 46 + "┤", style=f"{t.get('border')}")
+            console.print(f"  │  [{t.get('text_dim')}]Type:[/{t.get('text_dim')}] [{t.get('text')}]{storage_type}[/{t.get('text')}]" + " " * (33 - len(storage_type)) + "│", style=f"{t.get('border')}")
+            console.print(f"  │  [{t.get('text_dim')}]Used:[/{t.get('text_dim')}] [{t.get('warning')}]{used_mb:.2f} MB[/{t.get('warning')}] [{t.get('text_dim')}]/ {max_mb} MB[/{t.get('text_dim')}]" + " " * (19 - len(f"{used_mb:.2f}")) + "│", style=f"{t.get('border')}")
+
+            # Progress bar
+            bar_width = 30
+            filled = int((percentage / 100) * bar_width)
+            bar = "█" * filled + "░" * (bar_width - filled)
+
+            if percentage < 50:
+                bar_color = t.get('success')
+            elif percentage < 80:
+                bar_color = t.get('warning')
+            else:
+                bar_color = t.get('error')
+
+            console.print(f"  │  [{bar_color}]{bar}[/{bar_color}] [{t.get('text')}]{percentage:.1f}%[/{t.get('text')}]" + " " * (8 - len(f"{percentage:.1f}")) + "│", style=f"{t.get('border')}")
+            console.print("  ╰" + "─" * 46 + "╯", style=f"{t.get('border')}")
+
         console.print()
 
     async def send_file(self, file_path: str):
